@@ -19,6 +19,7 @@ const Align = {
 
 const Shape = {
 	rect: 'rect',
+	star: 'star',
 	circle: 'circle'
 }
 
@@ -53,11 +54,11 @@ Math.radtodeg = function(r) {
 	return r * 180 / Math.PI;
 }
 
-Math.lengthDirX = function(l, d) {
+Math.lendirx = function(l, d) {
 	return -Math.sin(Math.degtorad(d)) * l;
 }
 
-Math.lengthDirY = function(l, d) {
+Math.lendiry = function(l, d) {
 	return Math.cos(Math.degtorad(d)) * l;
 }
 
@@ -291,6 +292,103 @@ function BranthDraw(ctx) {
 		ctx.fill();
 		ctx.closePath();
 	}
+	this.polyBegin = function(x, y) {
+		ctx.beginPath();
+		ctx.moveTo(x, y);
+	}
+	this.vertex = function(x, y) {
+		ctx.lineTo(x, y);
+	}
+	this.polyEnd = function() {
+		ctx.closePath();
+		ctx.fill();
+	}
+	this.star = function(x, y, r, d) {
+		const sr = r * 0.5;
+		const lp = [
+			{
+				x: Math.lendirx(r, d + 180),
+				y: Math.lendiry(r, d + 180)
+			},
+			{
+				x: Math.lendirx(r, d + 252),
+				y: Math.lendiry(r, d + 252)
+			},
+			{
+				x: Math.lendirx(r, d + 324),
+				y: Math.lendiry(r, d + 324)
+			},
+			{
+				x: Math.lendirx(r, d + 36),
+				y: Math.lendiry(r, d + 36)
+			},
+			{
+				x: Math.lendirx(r, d + 108),
+				y: Math.lendiry(r, d + 108)
+			}
+		];
+		const sp = [
+			{
+				x: Math.lendirx(sr, d + 216),
+				y: Math.lendiry(sr, d + 216)
+			},
+			{
+				x: Math.lendirx(sr, d + 288),
+				y: Math.lendiry(sr, d + 288)
+			},
+			{
+				x: Math.lendirx(sr, d + 0),
+				y: Math.lendiry(sr, d + 0)
+			},
+			{
+				x: Math.lendirx(sr, d + 72),
+				y: Math.lendiry(sr, d + 72)
+			},
+			{
+				x: Math.lendirx(sr, d + 144),
+				y: Math.lendiry(sr, d + 144)
+			}
+		];
+		this.polyBegin(x + lp[0].x, y + lp[0].y);
+		this.vertex(x + sp[0].x, y + sp[0].y);
+		this.vertex(x + lp[1].x, y + lp[1].y);
+		this.vertex(x + sp[1].x, y + sp[1].y);
+		this.vertex(x + lp[2].x, y + lp[2].y);
+		this.vertex(x + sp[2].x, y + sp[2].y);
+		this.vertex(x + lp[3].x, y + lp[3].y);
+		this.vertex(x + sp[3].x, y + sp[3].y);
+		this.vertex(x + lp[4].x, y + lp[4].y);
+		this.vertex(x + sp[4].x, y + sp[4].y);
+		this.polyEnd();
+	}
+	this.rectd = function(x, y, w, h, d) {
+		w /= 2;
+		h /= 2;
+		const r = Math.sqrt(w ** 2 + h ** 2);
+		const p = [
+			{
+				x: Math.lendirx(r, d + 225),
+				y: Math.lendiry(r, d + 225)
+			},
+			{
+				x: Math.lendirx(r, d + 315),
+				y: Math.lendiry(r, d + 315)
+			},
+			{
+				x: Math.lendirx(r, d + 45),
+				y: Math.lendiry(r, d + 45)
+			},
+			{
+				x: Math.lendirx(r, d + 135),
+				y: Math.lendiry(r, d + 135)
+			}
+		];
+		this.polyBegin(x + p[0].x, y + p[0].y);
+		this.vertex(x + p[1].x, y + p[1].y);
+		this.vertex(x + p[2].x, y + p[2].y);
+		this.vertex(x + p[3].x, y + p[3].y);
+		this.polyEnd();
+	}
 	this.clearRect = function(x, y, w, h) {
 		ctx.clearRect(x, y, w, h);
 	}
@@ -353,43 +451,50 @@ function BranthObject(k) {
 	}
 }
 
-function BranthParticle(x, y, dx, dy, size, life, c, shape, opacity, key) {
+function BranthParticle(k, x, y, dx, dy, r, d, dd, a, c, life, shape, grav) {
 	this.x = x;
 	this.y = y;
-	this.r = size / 2;
-	this.mid = {
-		size: size / 2
-	}
-	this.size = size;
 	this.dx = dx;
 	this.dy = dy;
+	this.r = r;
+	this.d = d;
+	this.a = a;
 	this.c = c;
-	this.a = opacity;
-	this.i = OBJ.take(key).length;
 	this.life = life;
-	this.opacityShift = 1 - opacity;
+	this.shape = shape;
+	this.i = OBJ.take(k).length;
 	this.update = function() {
-		this.a = Math.max(0, (this.a) - (Time.deltaTime / this.life));
+		this.a = Math.max(0, this.a - Time.deltaTime / this.life);
 		if (this.a <= 0) {
-			OBJ.trash(key, this.i);
+			OBJ.trash(k, this.i);
 		}
 		this.x += this.dx;
 		this.y += this.dy;
+		this.d += dd;
+		this.dy += grav;
 		this.render();
 	}
 	this.render = function() {
 		Draw.setAlpha(this.a);
 		Draw.setColor(this.c);
-		switch (shape) {
-			case Shape.rect: Draw.rect(this.x - this.mid.size, this.y - this.mid.size, this.size, this.size); break;
-			case Shape.circle: Draw.circle(this.x, this.y, this.r); break;
+		switch (this.shape) {
+			case Shape.rect:
+				Draw.rectd(this.x, this.y, this.r, this.r, this.d);
+				break;
+			case Shape.star:
+				Draw.star(this.x, this.y, this.r, this.d);
+				break;
+			case Shape.circle:
+				Draw.circle(this.x, this.y, this.r);
+				break;
 			default: break;
 		}
 		Draw.setAlpha(1);
 	}
 }
 
-function BranthEmitter(defLayer) {
+function BranthEmitter(key) {
+	this.key = key;
 	this.x = {
 		min: 0,
 		max: 100
@@ -398,138 +503,129 @@ function BranthEmitter(defLayer) {
 		min: 0,
 		max: 100
 	}
-	this.size = {
-		min: 5,
-		max: 10
-	}
-	this.life = {
-		min: 2000,
-		max: 4000
-	}
-	this.speed = {
-		min: 2,
-		max: 5
-	}
-	this.color = C.red;
-	this.shape = Shape.rect;
-	this.opacity = {
+	this.spd = {
 		min: 1,
-		max: 1
+		max: 2
 	}
-	this.direction = {
+	this.r = {
+		min: 2,
+		max: 8
+	}
+	this.d = {
 		min: 0,
 		max: 360
 	}
-	this.objectKey = defLayer;
-	this.defaultLayer = defLayer;
+	this.dspd = {
+		min: 5,
+		max: 10
+	}
+	this.a = {
+		min: 1,
+		max: 1
+	}
+	this.c = C.black;
+	this.life = {
+		min: 3000,
+		max: 4000
+	}
+	this.shape = Shape.rect;
+	this.grav = {
+		min: 0.01,
+		max: 0.01
+	}
+	this.setKey = function(k) {
+		this.key = k;
+	}
+	this.resetKey = function() {
+		this.key = key;
+	}
 	this.setArea = function(xmin, xmax, ymin, ymax) {
 		this.x.min = xmin;
 		this.x.max = xmax;
 		this.y.min = ymin;
 		this.y.max = ymax;
 	}
+	this.setSpeed = function(min, max) {
+		this.spd.min = min;
+		this.spd.max = max;
+	}
 	this.setSize = function(min, max) {
-		this.size.min = min;
-		this.size.max = max;
+		this.r.min = min;
+		this.r.max = max;
+	}
+	this.setDirection = function(min, max) {
+		this.d.min = min;
+		this.d.max = max;
+	}
+	this.setAngleSpeed = function(min, max) {
+		this.dspd.min = min;
+		this.dspd.max = max;
+	}
+	this.setAlpha = function(min, max) {
+		this.a.min
+	}
+	this.setColor = function(c) {
+		this.c = c;
 	}
 	this.setLife = function(min, max) {
 		this.life.min = min;
 		this.life.max = max;
 	}
-	this.setSpeed = function(min, max) {
-		this.speed.min = min;
-		this.speed.max = max;
-	}
-	this.setColor = function(c) {
-		this.color = c;
-	}
 	this.setShape = function(s) {
 		this.shape = s;
 	}
-	this.setOpacity = function(min, max) {
-		this.opacity.min = min;
-		this.opacity.max = max;
+	this.setGravity = function(min, max) {
+		this.grav.min = min;
+		this.grav.max = max;
 	}
-	this.setDirection = function(min, max) {
-		this.direction.min = min;
-		this.direction.max = max;
-	}
-	this.setLayer = function(layer) {
-		this.objectKey = layer;
-	}
-	this.resetLayer = function() {
-		this.objectKey = this.defaultLayer;
-	}
-	this.preset = function(k) {
-		switch (k) {
-			case 'dot':
-				this.setSize(5, 10);
-				this.setLife(500, 500);
-				this.setSpeed(0, 0);
-				this.setColor(C.white);
-				this.setShape(Shape.circle);
-				this.setOpacity(0.8, 1);
-				this.setDirection(0, 0);
-			break;
-			case 'fire':
-				this.setSize(3, 5);
-				this.setLife(500, 1000);
-				this.setSpeed(1, 2);
-				this.setColor(C.red);
-				this.setShape(Shape.circle);
-				this.setOpacity(0.5, 0.5);
-				this.setDirection(170, 190);
-			break;
+	this.preset = function(s) {
+		switch (s) {
 			case 'puff':
-				this.setSize(5, 10);
-				this.setLife(250, 400);
 				this.setSpeed(2, 3);
-				this.setColor(C.white);
-				this.setShape(Shape.circle);
-				this.setOpacity(0.8, 1);
+				this.setSize(5, 10);
 				this.setDirection(0, 360);
-			break;
-			case 'largefire':
-				this.setSize(20, 30);
-				this.setLife(2000, 4000);
-				this.setSpeed(1, 2);
-				this.setColor(C.red);
+				this.setAngleSpeed(0, 0);
+				this.setAlpha(0.8, 1);
+				this.setColor(C.white);
+				this.setLife(250, 400);
 				this.setShape(Shape.circle);
-				this.setOpacity(0.5, 0.5);
-				this.setDirection(170, 190);
-			break;
+				this.setGravity(0, 0);
+				break;
+			case 'starpuff':
+				this.setSpeed(4, 5);
+				this.setSize(5, 8);
+				this.setDirection(0, 360);
+				this.setAngleSpeed(-5, 5);
+				this.setAlpha(0.5, 1);
+				this.setColor(C.yellow);
+				this.setLife(1000, 2000);
+				this.setShape(Shape.star);
+				this.setGravity(0.1, 0.1);
+				break;
 			default: break;
 		}
 	}
-	this.emit = function(amount) {
-		for (let i = 0; i < amount; i++) {
-			let spd = Math.range(this.speed.min, this.speed.max);
-			let dir = Math.range(this.direction.min, this.direction.max);
-			OBJ.add(this.objectKey, new BranthParticle(
+	this.emit = function(n) {
+		for (let i = 0; i < n; i++) {
+			const len = Math.range(this.spd.min, this.spd.max);
+			const dir = Math.range(this.d.min, this.d.max);
+			const p = new BranthParticle(
+				this.key,
 				Math.range(this.x.min, this.x.max),
 				Math.range(this.y.min, this.y.max),
-				Math.lengthDirX(spd, dir),
-				Math.lengthDirY(spd, dir),
-				Math.range(this.size.min, this.size.max),
+				Math.lendirx(len, dir),
+				Math.lendiry(len, dir),
+				Math.range(this.r.min, this.r.max),
+				dir,
+				Math.range(this.dspd.min, this.dspd.max),
+				Math.range(this.a.min, this.a.max),
+				this.c,
 				Math.range(this.life.min, this.life.max),
-				this.color,
 				this.shape,
-				Math.range(this.opacity.min, this.opacity.max),
-				this.objectKey
-			));
+				Math.range(this.grav.min, this.grav.max)
+			);
+			OBJ.add(this.key, p);
 		}
-	}
-	this.spawn = function(x, y, c, shape) {
-		let spd = Math.range(this.speed.min, this.speed.max);
-		let dir = Math.range(this.direction.min, this.direction.max);
-		OBJ.add(this.objectKey, new BranthParticle(
-			x, y,
-			Math.lengthDirX(spd, dir),
-			Math.lengthDirY(spd, dir),
-			Math.range(this.size.min, this.size.max),
-			Math.range(this.life.min, this.life.max),
-			c, shape, Math.range(this.opacity.min, this.opacity.max), this.objectKey
-		));
 	}
 }
 
@@ -606,7 +702,7 @@ const World = {
 		switch (this.scene.c) {
 			case this.scene.list['menu']:
 				if (!this.scene.isTransitioning) {
-					Emtr.preset('fire');
+					Emtr.preset('starpuff');
 					Emtr.setArea(Room.mid.x, Room.end.x, Room.y, Room.end.y);
 					Emtr.setColor(C.blue);
 					Emtr.emit(1);
@@ -616,7 +712,7 @@ const World = {
 				}
 				break;
 			case this.scene.list['game']:
-				Emtr.preset('fire');
+				Emtr.preset('starpuff');
 				Emtr.setArea(Room.x, Room.mid.x, Room.y, Room.end.y);
 				Emtr.setColor(C.red);
 				Emtr.emit(1);

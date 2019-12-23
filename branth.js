@@ -261,12 +261,17 @@ function BranthDraw(ctx) {
 	}
 	this.setColor = function(s) {
 		ctx.fillStyle = s;
+		ctx.strokeStyle = s;
 	}
 	this.setHAlign = function(s) {
 		ctx.textAlign = s;
 	}
 	this.setVAlign = function(s) {
 		ctx.textBaseline = s;
+	}
+	this.setHValign = function(h, v) {
+		this.setHalign(h);
+		this.setVAlign(v);
 	}
 	this.setShadow = function(x, y, b, c) {
 		ctx.shadowBlur = b || 0;
@@ -283,14 +288,33 @@ function BranthDraw(ctx) {
 	this.text = function(x, y, text) {
 		ctx.fillText(text, x, y);
 	}
+	this.beginPath = function() {
+		ctx.beginPath();
+	}
+	this.closePath = function() {
+		ctx.closePath();
+	}
+	this.fill = function() {
+		ctx.fill();
+	}
+	this.stroke = function() {
+		ctx.stroke();
+	}
+	this.moveTo = function(x, y) {
+		ctx.moveTo(x, y);
+	}
+	this.lineTo = function(x, y) {
+		ctx.lineTo(x, y);
+	}
 	this.rect = function(x, y, w, h) {
 		ctx.fillRect(x, y, w, h);
 	}
-	this.circle = function(x, y, r) {
+	this.circle = function(x, y, r, outline) {
 		ctx.beginPath();
 		ctx.arc(x, y, r, 0, 2 * Math.PI);
-		ctx.fill();
 		ctx.closePath();
+		if (outline) ctx.stroke();
+		else ctx.fill();
 	}
 	this.polyBegin = function(x, y) {
 		ctx.beginPath();
@@ -299,9 +323,10 @@ function BranthDraw(ctx) {
 	this.vertex = function(x, y) {
 		ctx.lineTo(x, y);
 	}
-	this.polyEnd = function() {
+	this.polyEnd = function(outline) {
 		ctx.closePath();
-		ctx.fill();
+		if (outline) ctx.stroke();
+		else ctx.fill();
 	}
 	this.star = function(x, y, r, d) {
 		const sr = r * 0.5;
@@ -359,7 +384,7 @@ function BranthDraw(ctx) {
 		this.vertex(x + sp[3].x, y + sp[3].y);
 		this.vertex(x + lp[4].x, y + lp[4].y);
 		this.vertex(x + sp[4].x, y + sp[4].y);
-		this.polyEnd();
+		this.polyEnd(false);
 	}
 	this.rectd = function(x, y, w, h, d) {
 		w /= 2;
@@ -485,7 +510,7 @@ function BranthParticle(k, x, y, dx, dy, r, d, dd, a, c, life, shape, grav) {
 				Draw.star(this.x, this.y, this.r, this.d);
 				break;
 			case Shape.circle:
-				Draw.circle(this.x, this.y, this.r);
+				Draw.circle(this.x, this.y, this.r, false);
 				break;
 			default: break;
 		}

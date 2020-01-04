@@ -13,6 +13,8 @@ const CANVAS = document.createElement('canvas');
 const CTX = CANVAS.getContext('2d');
 const FRAME_RATE = 1000 / 60;
 const DEFAULT_FONT = 'sans-serif';
+const DEBUG_MODE = true;
+if (!DEBUG_MODE) console.log = () => {};
 
 const Time = {
 	time: 0,
@@ -212,31 +214,31 @@ const Poly = {
 	triangleListFill: 'name: triangleList, quantity: 3, closePath: false, outline: false'
 };
 
-class Draw {
-	static setAlpha(a) {
+const Draw = {
+	setAlpha(a) {
 		CTX.globalAlpha = a;
-	}
-	static setColor(color) {
+	},
+	setColor(color) {
 		CTX.fillStyle = color;
 		CTX.strokeStyle = color;
-	}
-	static setHAlign(align) {
+	},
+	setHAlign(align) {
 		CTX.textAlign = align;
-	}
-	static setVAlign(align) {
+	},
+	setVAlign(align) {
 		CTX.textBaseline = align;
-	}
-	static setHVAlign(h, v) {
+	},
+	setHVAlign(h, v) {
 		CTX.textAlign = h;
 		CTX.textBaseline = v || h;
-	}
-	static setFont(font) {
+	},
+	setFont(font) {
 		CTX.font = `${font} ${DEFAULT_FONT}`;
-	}
-	static text(x, y, text) {
+	},
+	text(x, y, text) {
 		CTX.fillText(text, x, y);
-	}
-	static draw(outline, cap) {
+	},
+	draw(outline, cap) {
 		if (outline) {
 			if (cap) CTX.lineCap = cap;
 			CTX.stroke();
@@ -244,19 +246,19 @@ class Draw {
 		else {
 			CTX.fill();
 		}
-	}
-	static rect(x, y, w, h, outline) {
+	},
+	rect(x, y, w, h, outline) {
 		CTX.beginPath();
 		CTX.rect(x, y, w, h);
 		this.draw(outline);
-	}
-	static circle(x, y, r, outline) {
+	},
+	circle(x, y, r, outline) {
 		CTX.beginPath();
 		CTX.arc(x, y, r, 0, 2 * Math.PI);
 		CTX.closePath();
 		this.draw(outline);
-	}
-	static ellipse(x, y, w, h, outline) {
+	},
+	ellipse(x, y, w, h, outline) {
 		CTX.beginPath();
 		CTX.moveTo(x, y + h * 0.5);
 		CTX.quadraticCurveTo(x, y, x + w * 0.5, y);
@@ -265,8 +267,8 @@ class Draw {
 		CTX.quadraticCurveTo(x, y + h, x, y + h * 0.5);
 		CTX.closePath();
 		this.draw(outline);
-	}
-	static roundrect(x, y, w, h, r, outline) {
+	},
+	roundrect(x, y, w, h, r, outline) {
 		r = Math.clamp(r, 0, Math.min(w * 0.5, h * 0.5)) || 0;
 		CTX.beginPath();
 		CTX.moveTo(x, y + r);
@@ -279,19 +281,19 @@ class Draw {
 		CTX.quadraticCurveTo(x, y + h, x, y + h - r);
 		CTX.closePath();
 		this.draw(outline);
-	}
-	static poly = {
+	},
+	poly: {
 		name: '',
 		vertices: []
-	}
-	static polyBegin(poly = Poly.fill) {
+	},
+	polyBegin(poly = Poly.fill) {
 		this.poly.name = poly;
 		this.poly.vertices = [];
-	}
-	static vertex(x, y) {
+	},
+	vertex(x, y) {
 		this.poly.vertices.push({ x, y });
-	}
-	static polyEnd() {
+	},
+	polyEnd() {
 		const get = (p, s) => p.filter(x => x.includes(s))[0][1];
 		const split = (s) => s.replace(/\s/g, '').split(',').map(x => x.split(':'));
 		const getName = (s) => get(split(s), 'name');
@@ -323,8 +325,8 @@ class Draw {
 		this.draw(outline);
 		this.resetCap();
 		this.poly.vertices = [];
-	}
-	static rectTransformed(x, y, w, h, d, outline) {
+	},
+	rectTransformed(x, y, w, h, d, outline) {
 		const r = Math.hypot(w * 0.5, h * 0.5);
 		const p = [
 			Math.lendir(r, d + 225),
@@ -338,8 +340,8 @@ class Draw {
 		this.vertex(x + p[2].x, y + p[2].y);
 		this.vertex(x + p[3].x, y + p[3].y);
 		this.polyEnd();
-	}
-	static starTransformed(x, y, r, d, outline) {
+	},
+	starTransformed(x, y, r, d, outline) {
 		const lp = [
 			Math.lendir(r, d + 270),
 			Math.lendir(r, d + 342),
@@ -367,42 +369,42 @@ class Draw {
 		this.vertex(x + lp[4].x, y + lp[4].y);
 		this.vertex(x + sp[4].x, y + sp[4].y);
 		this.polyEnd();
-	}
-	static star(x, y, r, outline) {
+	},
+	star(x, y, r, outline) {
 		this.starTransformed(x, y, r, 0, outline);
-	}
-	static setCap(cap) {
+	},
+	setCap(cap) {
 		CTX.lineCap = cap;
-	}
-	static resetCap() {
+	},
+	resetCap() {
 		CTX.lineCap = Cap.butt;
-	}
-	static clearRect(x, y, w, h) {
+	},
+	clearRect(x, y, w, h) {
 		CTX.clearRect(x, y, w, h);
 	}
-}
+};
 
+let ID = 0;
 class BranthObject {
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
+		this.id = ID++;
+		this.active = true;
+		this.visible = true;
+		this.alarm = [];
+		this.alarmFunction = [
+			this.alarm0,
+			this.alarm1,
+			this.alarm2,
+			this.alarm3,
+			this.alarm4,
+			this.alarm5
+		];
 	}
-	static ID = 0;
-	id = BranthObject.ID++;
-	active = true;
-	visible = true;
 	update() {}
 	render() {}
 	renderUI() {}
-	alarm = [];
-	alarmFunction = [
-		this.alarm0,
-		this.alarm1,
-		this.alarm2,
-		this.alarm3,
-		this.alarm4,
-		this.alarm5
-	];
 	alarmUpdate() {
 		if (this.alarm) {
 			for (const i in this.alarm) {
@@ -420,26 +422,21 @@ class BranthObject {
 	}
 }
 
-class OBJ {
-	static list = [];
-	static classes = [];
-	static add(cls) {
+const OBJ = {
+	list: [],
+	classes: [],
+	add(cls) {
 		this.list.push([]);
 		this.classes.push(cls);
-	}
-	static create(cls, x, y) {
+	},
+	create(cls, x, y) {
 		if (this.classes.includes(cls)) {
-			const i = new cls(x, y);
-			this.list[this.classes.indexOf(cls)].push(i);
-			i.start();
+			const i = new cls(x, y); this.list[this.classes.indexOf(cls)].push(i); i.start();
 			return i;
 		}
-		else {
-			console.log(`Class not found: ${cls}`);
-			return null;
-		}
-	}
-	static update() {
+		console.log(`Class not found: ${cls.name}\n- Try add OBJ.add(${cls.name}); in your code.`);
+	},
+	update() {
 		for (const o of this.list) {
 			for (const i of o) {
 				if (i.active) {
@@ -451,7 +448,7 @@ class OBJ {
 			}
 		}
 	}
-}
+};
 
 const UI = {
 	update() {
@@ -463,7 +460,7 @@ const UI = {
 			}
 		}
 	}
-}
+};
 
 class BranthRoom {
 	constructor(name, w, h) {
@@ -474,31 +471,31 @@ class BranthRoom {
 	start() {}
 }
 
-class Room {
-	_name = '';
-	static list = [];
-	static get names() {
+const Room = {
+	_name: '',
+	list: [],
+	get names() {
 		return this.list.map(x => x.name);
-	}
-	static get id() {
+	},
+	get id() {
 		return this.names.indexOf(this._name);
-	}
-	static get name() {
+	},
+	get name() {
 		return this._name;
-	}
-	static get current() {
+	},
+	get current() {
 		return this.list[this.id] || new BranthRoom(this._name, CANVAS.width, CANVAS.height);
-	}
-	static get w() {
+	},
+	get w() {
 		return this.current.w;
-	}
-	static get h() {
+	},
+	get h() {
 		return this.current.h;
-	}
-	static add(room) {
+	},
+	add(room) {
 		this.list.push(room);
-	}
-	static start(name) {
+	},
+	start(name) {
 		if (this.names.includes(name)) {
 			this._name = name;
 			CANVAS.width = this.w;
@@ -509,7 +506,7 @@ class Room {
 			console.log(`Room not found: ${name}`);
 		}
 	}
-}
+};
 
 const RAF = window.requestAnimationFrame
 	|| window.msRequestAnimationFrame

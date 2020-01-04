@@ -1,14 +1,18 @@
 Number.prototype.mid = function() { return this.valueOf() * 0.5; }
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
-Math.range = (min, max) => min + Math.random() * (max - min);
+Math.range = (min, max, t) => min + (t || t === 0? 0 : Math.random()) * (max - min);
+Math.irange = (min, max) => Math.floor(Math.range(min, max));
 Math.degtorad = (d = 1) => d * Math.PI / 180;
 Math.radtodeg = (d = 1) => d * 180 / Math.PI;
 Math.lendirx = (l, d) => l * Math.cos(Math.degtorad(d));
 Math.lendiry = (l, d) => l * Math.sin(Math.degtorad(d));
 Math.lendir = (l, d) => ({ x: Math.lendirx(l, d), y: Math.lendiry(l, d) });
 Math.randneg = (t = 0.5) => Math.range(0, 1) > t? -1 : 1;
+Math.lerp = (from, to, t) => Math.range(from, to, t);
+Math.choose = (...args) => args[Math.irange(0, args.length)];
 
 const PARENT = document.body;
+const INPUT_PARENT = window;
 const CANVAS = document.createElement('canvas');
 const CTX = CANVAS.getContext('2d');
 const FRAME_RATE = 1000 / 60;
@@ -21,12 +25,198 @@ const Time = {
 	lastTime: 0,
 	deltaTime: 0,
 	fixedDeltaTime: FRAME_RATE,
+	get scaledDeltaTime() {
+		return this.deltaTime / this.fixedDeltaTime;
+	},
 	update(t) {
 		this.lastTime = this.time || 0;
 		this.time = t || 0;
 		this.deltaTime = this.time - this.lastTime || this.fixedDeltaTime;
+		if (this.deltaTime > 1000) {
+			console.log(`Big delta time: ${this.deltaTime} / ${this.fixedDeltaTime}`);
+		}
 	}
 };
+
+const KeyCode = {
+	Backspace: 8,
+	Tab: 9,
+	Enter: 13,
+	Shift: 16,
+	Ctrl: 17,
+	Alt: 18,
+	Pause: 19,
+	Break: 19,
+	CapsLock: 20,
+	Escape: 27,
+	PageUp: 33,
+	Space: 32,
+	PageDown: 34,
+	End: 35,
+	Home: 36,
+	Left: 37,
+	Up: 38,
+	Right: 39,
+	Down: 40,
+	PrintScreen: 44,
+	Insert: 45,
+	Delete: 46,
+	Digit0: 48,
+	Digit1: 49,
+	Digit2: 50,
+	Digit3: 51,
+	Digit4: 52,
+	Digit5: 53,
+	Digit6: 54,
+	Digit7: 55,
+	Digit8: 56,
+	Digit9: 57,
+	A: 65,
+	B: 66,
+	C: 67,
+	D: 68,
+	E: 69,
+	F: 70,
+	G: 71,
+	H: 72,
+	I: 73,
+	J: 74,
+	K: 75,
+	L: 76,
+	M: 77,
+	N: 78,
+	O: 79,
+	P: 80,
+	Q: 81,
+	R: 82,
+	S: 83,
+	T: 84,
+	U: 85,
+	V: 86,
+	W: 87,
+	X: 88,
+	Y: 89,
+	Z: 90,
+	LeftWindowKey: 91,
+	RightWindowKey: 92,
+	SelectKey: 93,
+	Numpad0: 96,
+	Numpad1: 97,
+	Numpad2: 98,
+	Numpad3: 99,
+	Numpad4: 100,
+	Numpad5: 101,
+	Numpad6: 102,
+	Numpad7: 103,
+	Numpad8: 104,
+	Numpad9: 105,
+	NumpadMultiply: 106,
+	NumpadAdd: 107,
+	NumpadSubtract: 109,
+	NumpadDecimal: 110,
+	NumpadDivide: 111,
+	F1: 112,
+	F2: 113,
+	F3: 114,
+	F4: 115,
+	F5: 116,
+	F6: 117,
+	F7: 118,
+	F8: 119,
+	F9: 120,
+	F10: 121,
+	F11: 122,
+	F12: 123,
+	NumLock: 144,
+	ScrollLock: 145,
+	Semicolon: 186,
+	Equal: 187,
+	Comma: 188,
+	Minus: 189,
+	Period: 190,
+	Slash: 191,
+	Backquote: 191,
+	LeftBracket: 219,
+	Backslash: 220,
+	RightBracket: 221,
+	Quote: 222
+};
+
+class BranthKey {
+	constructor(keyCode) {
+		this.keyCode = keyCode;
+		this.hold = false;
+		this.pressed = false;
+		this.released = false;
+	}
+	up() {
+		this.hold = false;
+		this.released = true;
+	}
+	down() {
+		this.hold = true;
+		this.pressed = true;
+	}
+	reset() {
+		this.pressed = false;
+		this.released = false;
+	}
+}
+
+const Input = {
+	list: [],
+	add(keyCode) {
+		this.list.push(new BranthKey(keyCode));
+	},
+	update() {},
+	reset() {
+		for (const k of this.list) {
+			k.reset();
+		}
+	},
+	keyUp(keyCode) {
+		for (const k of this.list) {
+			if (k.keyCode === keyCode) {
+				return k.released;
+			}
+		}
+	},
+	keyDown(keyCode) {
+		for (const k of this.list) {
+			if (k.keyCode === keyCode) {
+				return k.pressed;
+			}
+		}
+	},
+	keyHold(keyCode) {
+		for (const k of this.list) {
+			if (k.keyCode === keyCode) {
+				return k.hold;
+			}
+		}
+	},
+	eventup(e) {
+		for (const k of this.list) {
+			if (k.keyCode == e.which || k.keyCode == e.keyCode) {
+				k.up();
+			}
+		}
+	},
+	eventdown(e) {
+		for (const k of this.list) {
+			if (k.keyCode == e.which || k.keyCode == e.keyCode) {
+				if (!k.hold) k.down();
+			}
+		}
+	}
+};
+
+for (const keyCode of Object.values(KeyCode)) {
+	Input.add(keyCode);
+}
+
+INPUT_PARENT.addEventListener('keyup', (e) => Input.eventup(e));
+INPUT_PARENT.addEventListener('keydown', (e) => Input.eventdown(e));
 
 const C = {
 	aliceBlue: '#f0f8ff',
@@ -242,10 +432,17 @@ const Draw = {
 		if (outline) {
 			if (cap) CTX.lineCap = cap;
 			CTX.stroke();
+			this.resetCap();
 		}
 		else {
 			CTX.fill();
 		}
+	},
+	line(x1, y1, x2, y2, cap) {
+		CTX.beginPath();
+		CTX.moveTo(x1, y1);
+		CTX.lineTo(x2, y2);
+		this.draw(true, cap);
 	},
 	rect(x, y, w, h, outline) {
 		CTX.beginPath();
@@ -282,35 +479,33 @@ const Draw = {
 		CTX.closePath();
 		this.draw(outline);
 	},
-	poly: {
-		name: '',
-		vertices: []
-	},
-	polyBegin(poly = Poly.fill) {
-		this.poly.name = poly;
-		this.poly.vertices = [];
+	polyType: '',
+	vertices: [],
+	polyBegin(polyType = Poly.fill) {
+		this.polyType = polyType;
+		this.vertices = [];
 	},
 	vertex(x, y) {
-		this.poly.vertices.push({ x, y });
+		this.vertices.push({ x, y });
 	},
-	polyEnd() {
+	polyEnd(polyType) {
+		if (polyType) this.polyType = polyType;
 		const get = (p, s) => p.filter(x => x.includes(s))[0][1];
 		const split = (s) => s.replace(/\s/g, '').split(',').map(x => x.split(':'));
 		const getName = (s) => get(split(s), 'name');
-		const param = split(this.poly.name);
+		const param = split(this.polyType);
 		const name = get(param, 'name');
 		const outline = get(param, 'outline') === 'true';
 		const quantity = +get(param, 'quantity');
 		const closePath = get(param, 'closePath') === 'true';
 		let count = 0;
 		CTX.beginPath();
-		for (const v of this.poly.vertices) {
+		for (const v of this.vertices) {
 			if (quantity === 1) {
-				CTX.lineCap = Cap.round;
-				this.draw(outline);
+				this.draw(outline, Cap.round);
 				CTX.beginPath();
-				CTX.moveTo(v.x - 0.5, v.y - 0.5);
-				CTX.lineTo(v.x + 0.5, v.y + 0.5);
+				CTX.moveTo(v.x, v.y);
+				CTX.lineTo(v.x, v.y);
 			}
 			else if (count === 0 || (quantity > 1 && count % quantity === 0)) {
 				if (closePath) CTX.closePath();
@@ -323,8 +518,6 @@ const Draw = {
 		}
 		if (closePath) CTX.closePath();
 		this.draw(outline);
-		this.resetCap();
-		this.poly.vertices = [];
 	},
 	rectTransformed(x, y, w, h, d, outline) {
 		const r = Math.hypot(w * 0.5, h * 0.5);
@@ -379,57 +572,62 @@ const Draw = {
 	resetCap() {
 		CTX.lineCap = Cap.butt;
 	},
+	setLineWidth(n) {
+		CTX.lineWidth = n;
+	},
+	resetLineWidth() {
+		CTX.lineWidth = 1;
+	},
+	beginPath() {
+		CTX.beginPath();
+	},
+	closePath() {
+		CTX.closePath();
+	},
+	moveTo(x, y) {
+		CTX.moveTo(x, y);
+	},
+	lineTo(x, y) {
+		CTX.lineTo(x, y);
+	},
+	curveTo(cpx, cpy, x, y) {
+		CTX.quadraticCurveTo(cpx, cpy, x, y);
+	},
+	bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
+		CTX.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
+	},
+	fill() {
+		CTX.fill();
+	},
+	stroke() {
+		CTX.stroke();
+	},
 	clearRect(x, y, w, h) {
 		CTX.clearRect(x, y, w, h);
 	}
 };
 
-let ID = 0;
-class BranthObject {
-	constructor(x, y) {
-		this.x = x;
-		this.y = y;
-		this.id = ID++;
-		this.active = true;
-		this.visible = true;
-		this.alarm = [];
-		this.alarmFunction = [
-			this.alarm0,
-			this.alarm1,
-			this.alarm2,
-			this.alarm3,
-			this.alarm4,
-			this.alarm5
-		];
-	}
-	update() {}
-	render() {}
-	renderUI() {}
-	alarmUpdate() {
-		if (this.alarm) {
-			for (const i in this.alarm) {
-				if (this.alarm[i] !== null) {
-					if (this.alarm[i] > 0) {
-						this.alarm[i] = Math.max(0, this.alarm[i] - Time.deltaTime);
-					}
-					else if (this.alarm[i] != -1) {
-						if (this.alarmFunction[i]) this.alarmFunction[i]();
-						if (this.alarm[i] <= 0) this.alarm[i] = -1;
-					}
-				}
-			}
-		}
-	}
-}
-
 const OBJ = {
+	ID: 0,
 	list: [],
 	classes: [],
 	add(cls) {
 		this.list.push([]);
 		this.classes.push(cls);
 	},
-	create(cls, x, y) {
+	get(id) {
+		for (const o of this.list) {
+			for (const i of o) {
+				if (i.id === id) {
+					return i;
+				}
+			}
+		}
+	},
+	take(cls) {
+		return this.list[this.classes.indexOf(cls)];
+	},
+	create(cls, x = 0, y = 0) {
 		if (this.classes.includes(cls)) {
 			const i = new cls(x, y); this.list[this.classes.indexOf(cls)].push(i); i.start();
 			return i;
@@ -442,6 +640,12 @@ const OBJ = {
 				if (i.active) {
 					i.update();
 				}
+			}
+		}
+	},
+	render() {
+		for (const o of this.list) {
+			for (const i of o) {
 				if (i.visible) {
 					i.render();
 				}
@@ -450,17 +654,48 @@ const OBJ = {
 	}
 };
 
-const UI = {
-	update() {
-		for (const o of OBJ.list) {
-			for (const i of o) {
-				if (i.visible) {
-					i.renderUI();
+class BranthObject {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+		this.id = OBJ.ID++;
+		this.active = true;
+		this.visible = true;
+		this.alarm = [-1, -1, -1, -1, -1, -1];
+	}
+	start() {}
+	update() {}
+	render() {}
+	renderUI() {}
+	alarm0() {}
+	alarm1() {}
+	alarm2() {}
+	alarm3() {}
+	alarm4() {}
+	alarm5() {}
+	alarmUpdate() {
+		if (this.alarm) {
+			for (let i = 0; i < this.alarm.length; i++) {
+				if (this.alarm[i] !== null) {
+					if (this.alarm[i] > 0) {
+						this.alarm[i] = Math.max(0, this.alarm[i] - Time.deltaTime);
+					}
+					else if (this.alarm[i] != -1) {
+						switch (i) {
+							case 0: this.alarm0(); break;
+							case 1: this.alarm1(); break;
+							case 2: this.alarm2(); break;
+							case 3: this.alarm3(); break;
+							case 4: this.alarm4(); break;
+							case 5: this.alarm5(); break;
+						}
+						if (this.alarm[i] <= 0) this.alarm[i] = -1;
+					}
 				}
 			}
 		}
 	}
-};
+}
 
 class BranthRoom {
 	constructor(name, w, h) {
@@ -469,6 +704,9 @@ class BranthRoom {
 		this.h = h;
 	}
 	start() {}
+	update() {}
+	render() {}
+	renderUI() {}
 }
 
 const Room = {
@@ -505,6 +743,27 @@ const Room = {
 		else {
 			console.log(`Room not found: ${name}`);
 		}
+	},
+	update() {
+		this.current.update();
+	},
+	render() {
+		this.current.render();
+	}
+};
+
+const UI = {
+	render() {
+		for (const o of OBJ.list) {
+			for (const i of o) {
+				if (i.visible) {
+					i.renderUI();
+				}
+			}
+		}
+		for (const r of Room.list) {
+			r.renderUI();
+		}
 	}
 };
 
@@ -520,9 +779,14 @@ const BRANTH = {
 	},
 	update: function(t) {
 		Time.update(t);
-		Draw.clearRect(0, 0, Room.w, Room.h);
+		Input.update();
+		Room.update();
 		OBJ.update();
-		UI.update();
+		Draw.clearRect(0, 0, Room.w, Room.h);
+		Room.render();
+		OBJ.render();
+		UI.render();
+		Input.reset();
 		RAF(BRANTH.update);
 	}
 };

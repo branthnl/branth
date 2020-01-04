@@ -1,380 +1,362 @@
+Number.prototype.mid = function() { return this.valueOf() * 0.5; }
+Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
+Math.range = (min, max) => min + Math.random() * (max - min);
+Math.degtorad = (d = 1) => d * Math.PI / 180;
+Math.radtodeg = (d = 1) => d * 180 / Math.PI;
+Math.lendirx = (l, d) => l * Math.cos(Math.degtorad(d));
+Math.lendiry = (l, d) => l * Math.sin(Math.degtorad(d));
+Math.lendir = (l, d) => ({ x: Math.lendirx(l, d), y: Math.lendiry(l, d) });
+Math.randneg = (t = 0.5) => Math.range(0, 1) > t? -1 : 1;
+
+const PARENT = document.body;
+const CANVAS = document.createElement('canvas');
+const CTX = CANVAS.getContext('2d');
+const FRAME_RATE = 1000 / 60;
+const DEFAULT_FONT = 'sans-serif';
+
+const Time = {
+	time: 0,
+	lastTime: 0,
+	deltaTime: 0,
+	fixedDeltaTime: FRAME_RATE,
+	update(t) {
+		this.lastTime = this.time || 0;
+		this.time = t || 0;
+		this.deltaTime = this.time - this.lastTime || this.fixedDeltaTime;
+	}
+};
+
 const C = {
-	red: '#f1334d',
-	blue: '#68c2ff',
-	gray: 'gray',
-	black: 'black',
-	white: 'white',
-	ltgray: 'lightgray',
-	yellow: '#f8b500'
-}
+	aliceBlue: '#f0f8ff',
+	antiqueWhite: '#faebd7',
+	aqua: '#00ffff',
+	aquamarine: '#7fffd4',
+	azure: '#f0ffff',
+	beige: '#f5f5dc',
+	bisque: '#ffe4c4',
+	black: '#000000',
+	blanchedAlmond: '#ffebcd',
+	blue: '#0000ff',
+	blueViolet: '#8a2be2',
+	brown: '#a52a2a',
+	burlyWood: '#deb887',
+	cadetBlue: '#5f9ea0',
+	chartreuse: '#7fff00',
+	chocolate: '#d2691e',
+	coral: '#ff7f50',
+	cornflowerBlue: '#6495ed',
+	cornsilk: '#fff8dc',
+	crimson: '#dc143c',
+	cyan: '#00ffff',
+	darkBlue: '#00008b',
+	darkCyan: '#008b8b',
+	darkGoldenRod: '#b8860b',
+	darkGray: '#a9a9a9',
+	darkGrey: '#a9a9a9',
+	darkGreen: '#006400',
+	darkKhaki: '#bdb76b',
+	darkMagenta: '#8b008b',
+	darkOliveGreen: '#556b2f',
+	darkOrange: '#ff8c00',
+	darkOrchid: '#9932cc',
+	darkRed: '#8b0000',
+	darkSalmon: '#e9967a',
+	darkSeaGreen: '#8fbc8f',
+	darkSlateBlue: '#483d8b',
+	darkSlateGray: '#2f4f4f',
+	darkSlateGrey: '#2f4f4f',
+	darkTurquoise: '#00ced1',
+	darkViolet: '#9400d3',
+	deepPink: '#ff1493',
+	deepSkyBlue: '#00bfff',
+	dimGray: '#696969',
+	dimGrey: '#696969',
+	dodgerBlue: '#1e90ff',
+	fireBrick: '#b22222',
+	floralWhite: '#fffaf0',
+	forestGreen: '#228b22',
+	fuchsia: '#ff00ff',
+	gainsboro: '#dcdcdc',
+	ghostWhite: '#f8f8ff',
+	gold: '#ffd700',
+	goldenRod: '#daa520',
+	gray: '#808080',
+	grey: '#808080',
+	green: '#008000',
+	greenYellow: '#adff2f',
+	honeyDew: '#f0fff0',
+	hotPink: '#ff69b4',
+	indianRed: '#cd5c5c',
+	indigo: '#4b0082',
+	ivory: '#fffff0',
+	khaki: '#f0e68c',
+	lavender: '#e6e6fa',
+	lavenderBlush: '#fff0f5',
+	lawnGreen: '#7cfc00',
+	lemonChiffon: '#fffacd',
+	lightBlue: '#add8e6',
+	lightCoral: '#f08080',
+	lightCyan: '#e0ffff',
+	lightGoldenRodYellow: '#fafad2',
+	lightGray: '#d3d3d3',
+	lightGrey: '#d3d3d3',
+	lightGreen: '#90ee90',
+	lightPink: '#ffb6c1',
+	lightSalmon: '#ffa07a',
+	lightSeaGreen: '#20b2aa',
+	lightSkyBlue: '#87cefa',
+	lightSlateGray: '#778899',
+	lightSlateGrey: '#778899',
+	lightSteelBlue: '#b0c4de',
+	lightYellow: '#ffffe0',
+	lime: '#00ff00',
+	limeGreen: '#32cd32',
+	linen: '#faf0e6',
+	magenta: '#ff00ff',
+	maroon: '#800000',
+	mediumAquaMarine: '#66cdaa',
+	mediumBlue: '#0000cd',
+	mediumOrchid: '#ba55d3',
+	mediumPurple: '#9370db',
+	mediumSeaGreen: '#3cb371',
+	mediumSlateBlue: '#7b68ee',
+	mediumSpringGreen: '#00fa9a',
+	mediumTurquoise: '#48d1cc',
+	mediumVioletRed: '#c71585',
+	midnightBlue: '#191970',
+	mintCream: '#f5fffa',
+	mistyRose: '#ffe4e1',
+	moccasin: '#ffe4b5',
+	navajoWhite: '#ffdead',
+	navy: '#000080',
+	oldLace: '#fdf5e6',
+	olive: '#808000',
+	oliveDrab: '#6b8e23',
+	orange: '#ffa500',
+	orangeRed: '#ff4500',
+	orchid: '#da70d6',
+	paleGoldenRod: '#eee8aa',
+	paleGreen: '#98fb98',
+	paleTurquoise: '#afeeee',
+	paleVioletRed: '#db7093',
+	papayaWhip: '#ffefd5',
+	peachPuff: '#ffdab9',
+	peru: '#cd853f',
+	pink: '#ffc0cb',
+	plum: '#dda0dd',
+	powderBlue: '#b0e0e6',
+	purple: '#800080',
+	rebeccaPurple: '#663399',
+	red: '#ff0000',
+	rosyBrown: '#bc8f8f',
+	royalBlue: '#4169e1',
+	saddleBrown: '#8b4513',
+	salmon: '#fa8072',
+	sandyBrown: '#f4a460',
+	seaGreen: '#2e8b57',
+	seaShell: '#fff5ee',
+	sienna: '#a0522d',
+	silver: '#c0c0c0',
+	skyBlue: '#87ceeb',
+	slateBlue: '#6a5acd',
+	slateGray: '#708090',
+	slateGrey: '#708090',
+	snow: '#fffafa',
+	springGreen: '#00ff7f',
+	steelBlue: '#4682b4',
+	tan: '#d2b48c',
+	teal: '#008080',
+	thistle: '#d8bfd8',
+	tomato: '#ff6347',
+	turquoise: '#40e0d0',
+	violet: '#ee82ee',
+	wheat: '#f5deb3',
+	white: '#ffffff',
+	whiteSmoke: '#f5f5f5',
+	yellow: '#ffff00',
+	yellowGreen: '#9acd32'
+};
+
+const Font = {
+	small: '16px',
+	smallBold: 'bold 16px',
+	smallItalic: 'italic 16px',
+	medium: '24px',
+	mediumBold: 'bold 24px',
+	mediumItalic: 'italic 24px',
+	large: '36px',
+	largeBold: 'bold 36px',
+	largeItalic: 'italic 36px'
+};
 
 const Align = {
 	l: 'left',
 	r: 'right',
 	c: 'center',
 	t: 'top',
-	m: 'middle',
-	b: 'bottom'
-}
+	b: 'bottom',
+	m: 'middle'
+};
 
-const Shape = {
-	rect: 'rect',
-	star: 'star',
-	circle: 'circle'
-}
+const Cap = {
+	butt: 'butt',
+	round: 'round'
+};
 
-const KeyCode = {
-	W: 87,
-	S: 83,
-	A: 65,
-	D: 68,
-	Up: 38,
-	Down: 40,
-	Left: 37,
-	Right: 39,
-	Space: 32,
-	Enter: 13,
-	U: 85,
-	Escape: 27
-}
+const Poly = {
+	fill: 'name: fill, quantity: 0, closePath: true, outline: false',
+	stroke: 'name: stroke, quantity: 0, closePath: true, outline: true',
+	lineList: 'name: lineList, quantity: 2, closePath: false, outline: true',
+	pointList: 'name: pointList, quantity: 1, closePath: false, outline: true',
+	triangleList: 'name: triangleList, quantity: 3, closePath: true, outline: true',
+	triangleListFill: 'name: triangleList, quantity: 3, closePath: false, outline: false'
+};
 
-Math.clamp = function(a, b, c) {
-	return Math.min(c, Math.max(b, a));
-}
-
-Math.range = function(min, max) {
-	return Math.random() * (max - min) + min;
-}
-
-Math.degtorad = function(d) {
-	return d * Math.PI / 180;
-}
-
-Math.radtodeg = function(r) {
-	return r * 180 / Math.PI;
-}
-
-Math.lendirx = function(l, d) {
-	return -Math.sin(Math.degtorad(d)) * l;
-}
-
-Math.lendiry = function(l, d) {
-	return Math.cos(Math.degtorad(d)) * l;
-}
-
-Math.randomNegator = function(n) {
-	return Math.range(0, 100) < (n || 50)? 1 : -1;
-}
-
-function BranthTime() {
-	this.time = 0;
-	this.lastTime = 0;
-	this.deltaTime = 0;
-	this.fixedDeltaTime = 1000 / 60;
-	this.update = function(t) {
-		this.lastTime = this.time || 0;
-		this.time = t || 0;
-		this.deltaTime = this.time - this.lastTime || this.fixedDeltaTime;
+class Draw {
+	static setAlpha(a) {
+		CTX.globalAlpha = a;
 	}
-	this.toSeconds = function(t) {
-		return Math.ceil(t / 1000);
+	static setColor(color) {
+		CTX.fillStyle = color;
+		CTX.strokeStyle = color;
 	}
-	this.toMinutes = function(t) {
-		return Math.ceil(t / 60000);
+	static setHAlign(align) {
+		CTX.textAlign = align;
 	}
-	this.toClockSeconds = function(t) {
-		return Math.floor(t / 1000) % 60;
+	static setVAlign(align) {
+		CTX.textBaseline = align;
 	}
-	this.toClockMinutes = function(t) {
-		return Math.floor(t / 60000) % 60;
+	static setHVAlign(h, v) {
+		CTX.textAlign = h;
+		CTX.textBaseline = v || h;
 	}
-	this.toClockSeconds0 = function(t) {
-		let s = Math.abs(this.toClockSeconds(t));
-		return (s < 10? '0' : '') + s;
+	static setFont(font) {
+		CTX.font = `${font} ${DEFAULT_FONT}`;
 	}
-	this.toClockMinutes0 = function(t) {
-		let m = Math.abs(this.toClockMinutes(t));
-		return (m < 10? '0' : '') + m;
+	static text(x, y, text) {
+		CTX.fillText(text, x, y);
 	}
-}
-
-function BranthScene(x, y, w, h) {
-	this.x = x;
-	this.y = y;
-	this.w = w;
-	this.h = h;
-	this.def = {
-		x: x,
-		y: y
-	}
-	this.mid = {
-		x: x + w / 2,
-		y: y + h / 2,
-		w: w / 2,
-		h: h / 2
-	}
-	this.end = {
-		x: x + w,
-		y: y + h
-	}
-	this.alarm = [];
-	this.shakeInterval = 0;
-	this.shakeMagnitude = 0;
-	this.shake = function(mag, int) {
-		this.shakeInterval = int;
-		this.shakeMagnitude = mag;
-		this.alarm[0] = this.shakeInterval;
-	}
-	this.update = function() {
-		this.mid.x = this.x + this.mid.w;
-		this.mid.y = this.y + this.mid.h;
-		this.end.x = this.x + this.w;
-		this.end.y = this.y + this.h;
-		if (this.alarm[0] > 0) {
-			let intervalScale = this.alarm[0] / this.shakeInterval;
-			this.x = this.shakeMagnitude * Math.randomNegator() * intervalScale;
-			this.y = this.shakeMagnitude * Math.randomNegator() * intervalScale;
+	static draw(outline, cap) {
+		if (outline) {
+			if (cap) CTX.lineCap = cap;
+			CTX.stroke();
 		}
-		this.alarmUpdate();
+		else {
+			CTX.fill();
+		}
 	}
-	this.alarmUpdate = function() {
-		if (this.alarm != null) {
-			for (let i = 0; i < this.alarm.length; i++) {
-				if (this.alarm[i] != null) {
-					if (this.alarm[i] > 0) {
-						this.alarm[i] = Math.max(0, this.alarm[i] - Time.deltaTime);
-					}
-					else if (this.alarm[i] != -1) {
-						switch (i) {
-							case 0:
-								this.x = this.def.x;
-								this.y = this.def.y;
-								break;
-							default: break;
-						}
-						if (this.alarm[i] <= 0) this.alarm[i] = -1;
-					}
-				}
+	static rect(x, y, w, h, outline) {
+		CTX.beginPath();
+		CTX.rect(x, y, w, h);
+		this.draw(outline);
+	}
+	static circle(x, y, r, outline) {
+		CTX.beginPath();
+		CTX.arc(x, y, r, 0, 2 * Math.PI);
+		CTX.closePath();
+		this.draw(outline);
+	}
+	static ellipse(x, y, w, h, outline) {
+		CTX.beginPath();
+		CTX.moveTo(x, y + h * 0.5);
+		CTX.quadraticCurveTo(x, y, x + w * 0.5, y);
+		CTX.quadraticCurveTo(x + w, y, x + w, y + h * 0.5);
+		CTX.quadraticCurveTo(x + w, y + h, x + w * 0.5, y + h);
+		CTX.quadraticCurveTo(x, y + h, x, y + h * 0.5);
+		CTX.closePath();
+		this.draw(outline);
+	}
+	static roundrect(x, y, w, h, r, outline) {
+		r = Math.clamp(r, 0, Math.min(w * 0.5, h * 0.5)) || 0;
+		CTX.beginPath();
+		CTX.moveTo(x, y + r);
+		CTX.quadraticCurveTo(x, y, x + r, y);
+		CTX.lineTo(x + w - r, y);
+		CTX.quadraticCurveTo(x + w, y, x + w, y + r);
+		CTX.lineTo(x + w, y + h - r);
+		CTX.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+		CTX.lineTo(x + r, y + h);
+		CTX.quadraticCurveTo(x, y + h, x, y + h - r);
+		CTX.closePath();
+		this.draw(outline);
+	}
+	static poly = {
+		name: '',
+		vertices: []
+	}
+	static polyBegin(poly = Poly.fill) {
+		this.poly.name = poly;
+		this.poly.vertices = [];
+	}
+	static vertex(x, y) {
+		this.poly.vertices.push({ x, y });
+	}
+	static polyEnd() {
+		const get = (p, s) => p.filter(x => x.includes(s))[0][1];
+		const split = (s) => s.replace(/\s/g, '').split(',').map(x => x.split(':'));
+		const getName = (s) => get(split(s), 'name');
+		const param = split(this.poly.name);
+		const name = get(param, 'name');
+		const outline = get(param, 'outline') === 'true';
+		const quantity = +get(param, 'quantity');
+		const closePath = get(param, 'closePath') === 'true';
+		let count = 0;
+		CTX.beginPath();
+		for (const v of this.poly.vertices) {
+			if (quantity === 1) {
+				CTX.lineCap = Cap.round;
+				this.draw(outline);
+				CTX.beginPath();
+				CTX.moveTo(v.x - 0.5, v.y - 0.5);
+				CTX.lineTo(v.x + 0.5, v.y + 0.5);
 			}
-		}
-	}
-}
-
-function BranthKey(keyCode) {
-	this.keyCode = keyCode;
-	this.hold = false;
-	this.pressed = false;
-	this.released = false;
-	this.triggerCount = 0;
-	this.triggerCountThreshold = 2;
-	this.up = function() {
-		this.hold = false;
-		this.released = true;
-		this.triggerTime = 0;
-	}
-	this.down = function() {
-		this.hold = true;
-		this.pressed = true;
-		this.triggerTime = 0;
-	}
-	this.update = function() {
-		this.triggerTime++;
-		if (this.triggerTime >= this.triggerCountThreshold) {
-			this.pressed = false;
-			this.released = false;
-		}
-	}
-}
-
-function BranthInput() {
-	this.key = [];
-	for (let key in KeyCode) {
-		this.key.push(new BranthKey(KeyCode[key]));
-	}
-	this.keyUp = function(keyCode) {
-		for (let i = 0; i < this.key.length; i++) {
-			const k = this.key[i];
-			if (keyCode === k.keyCode) {
-				if (k.released) {
-					return true;
-				}
+			else if (count === 0 || (quantity > 1 && count % quantity === 0)) {
+				if (closePath) CTX.closePath();
+				this.draw(outline);
+				CTX.beginPath();
+				CTX.moveTo(v.x, v.y);
 			}
+			else CTX.lineTo(v.x, v.y);
+			count++;
 		}
-		return false;
+		if (closePath) CTX.closePath();
+		this.draw(outline);
+		this.resetCap();
+		this.poly.vertices = [];
 	}
-	this.keyDown = function(keyCode) {
-		for (let i = 0; i < this.key.length; i++) {
-			const k = this.key[i];
-			if (keyCode === k.keyCode) {
-				if (k.pressed) {
-					return true;
-				}
-			}
-		}
-		return false;
+	static rectTransformed(x, y, w, h, d, outline) {
+		const r = Math.hypot(w * 0.5, h * 0.5);
+		const p = [
+			Math.lendir(r, d + 225),
+			Math.lendir(r, d + 315),
+			Math.lendir(r, d + 45),
+			Math.lendir(r, d + 135)
+		];
+		this.polyBegin(outline? Poly.stroke : Poly.fill);
+		this.vertex(x + p[0].x, y + p[0].y);
+		this.vertex(x + p[1].x, y + p[1].y);
+		this.vertex(x + p[2].x, y + p[2].y);
+		this.vertex(x + p[3].x, y + p[3].y);
+		this.polyEnd();
 	}
-	this.keyHold = function(keyCode) {
-		for (let i = 0; i < this.key.length; i++) {
-			const k = this.key[i];
-			if (keyCode === k.keyCode) {
-				if (k.hold) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	this.up = function(e) {
-		for (let i = 0; i < this.key.length; i++) {
-			const k = this.key[i];
-			if (e.which == k.keyCode || e.keyCode == k.keyCode) {
-				k.up();
-			}
-		}
-	}
-	this.down = function(e) {
-		for (let i = 0; i < this.key.length; i++) {
-			const k = this.key[i];
-			if (e.which == k.keyCode || e.keyCode == k.keyCode) {
-				if (!k.hold) k.down();
-			}
-		}
-	}
-	this.update = function() {
-		for (let i = 0; i < this.key.length; i++) {
-			this.key[i].update();
-		}
-	}
-}
-
-function BranthCanvas(w, h, c) {
-	let cnv = document.createElement('canvas');
-	cnv.width = w;
-	cnv.height = h;
-	cnv.style.backgroundColor = c;
-	return cnv;
-}
-
-function BranthDraw(ctx) {
-	this.setAlpha = function(n) {
-		ctx.globalAlpha = n;
-	}
-	this.setColor = function(s) {
-		ctx.fillStyle = s;
-		ctx.strokeStyle = s;
-	}
-	this.setHAlign = function(s) {
-		ctx.textAlign = s;
-	}
-	this.setVAlign = function(s) {
-		ctx.textBaseline = s;
-	}
-	this.setHValign = function(h, v) {
-		this.setHalign(h);
-		this.setVAlign(v);
-	}
-	this.setShadow = function(x, y, b, c) {
-		ctx.shadowBlur = b || 0;
-		ctx.shadowColor = c || C.black;
-		ctx.shadowOffsetX = x;
-		ctx.shadowOffsetY = y;
-	}
-	this.resetShadow = function() {
-		this.setShadow(0, 0, 0, C.black);
-	}
-	this.font = function(s) {
-		ctx.font = s + ' Montserrat, sans-serif';
-	}
-	this.text = function(x, y, text) {
-		ctx.fillText(text, x, y);
-	}
-	this.beginPath = function() {
-		ctx.beginPath();
-	}
-	this.closePath = function() {
-		ctx.closePath();
-	}
-	this.fill = function() {
-		ctx.fill();
-	}
-	this.stroke = function() {
-		ctx.stroke();
-	}
-	this.moveTo = function(x, y) {
-		ctx.moveTo(x, y);
-	}
-	this.lineTo = function(x, y) {
-		ctx.lineTo(x, y);
-	}
-	this.rect = function(x, y, w, h) {
-		ctx.fillRect(x, y, w, h);
-	}
-	this.circle = function(x, y, r, outline) {
-		ctx.beginPath();
-		ctx.arc(x, y, r, 0, 2 * Math.PI);
-		ctx.closePath();
-		if (outline) ctx.stroke();
-		else ctx.fill();
-	}
-	this.polyBegin = function(x, y) {
-		ctx.beginPath();
-		ctx.moveTo(x, y);
-	}
-	this.vertex = function(x, y) {
-		ctx.lineTo(x, y);
-	}
-	this.polyEnd = function(outline) {
-		ctx.closePath();
-		if (outline) ctx.stroke();
-		else ctx.fill();
-	}
-	this.star = function(x, y, r, d) {
-		const sr = r * 0.5;
+	static starTransformed(x, y, r, d, outline) {
 		const lp = [
-			{
-				x: Math.lendirx(r, d + 180),
-				y: Math.lendiry(r, d + 180)
-			},
-			{
-				x: Math.lendirx(r, d + 252),
-				y: Math.lendiry(r, d + 252)
-			},
-			{
-				x: Math.lendirx(r, d + 324),
-				y: Math.lendiry(r, d + 324)
-			},
-			{
-				x: Math.lendirx(r, d + 36),
-				y: Math.lendiry(r, d + 36)
-			},
-			{
-				x: Math.lendirx(r, d + 108),
-				y: Math.lendiry(r, d + 108)
-			}
+			Math.lendir(r, d + 270),
+			Math.lendir(r, d + 342),
+			Math.lendir(r, d + 54),
+			Math.lendir(r, d + 126),
+			Math.lendir(r, d + 198)
 		];
+		const sr = r * 0.5;
 		const sp = [
-			{
-				x: Math.lendirx(sr, d + 216),
-				y: Math.lendiry(sr, d + 216)
-			},
-			{
-				x: Math.lendirx(sr, d + 288),
-				y: Math.lendiry(sr, d + 288)
-			},
-			{
-				x: Math.lendirx(sr, d + 0),
-				y: Math.lendiry(sr, d + 0)
-			},
-			{
-				x: Math.lendirx(sr, d + 72),
-				y: Math.lendiry(sr, d + 72)
-			},
-			{
-				x: Math.lendirx(sr, d + 144),
-				y: Math.lendiry(sr, d + 144)
-			}
+			Math.lendir(sr, d + 306),
+			Math.lendir(sr, d + 18),
+			Math.lendir(sr, d + 90),
+			Math.lendir(sr, d + 162),
+			Math.lendir(sr, d + 234)
 		];
-		this.polyBegin(x + lp[0].x, y + lp[0].y);
+		this.polyBegin(outline? Poly.stroke : Poly.fill);
+		this.vertex(x + lp[0].x, y + lp[0].y);
 		this.vertex(x + sp[0].x, y + sp[0].y);
 		this.vertex(x + lp[1].x, y + lp[1].y);
 		this.vertex(x + sp[1].x, y + sp[1].y);
@@ -384,436 +366,166 @@ function BranthDraw(ctx) {
 		this.vertex(x + sp[3].x, y + sp[3].y);
 		this.vertex(x + lp[4].x, y + lp[4].y);
 		this.vertex(x + sp[4].x, y + sp[4].y);
-		this.polyEnd(false);
-	}
-	this.rectd = function(x, y, w, h, d) {
-		w /= 2;
-		h /= 2;
-		const r = Math.sqrt(w ** 2 + h ** 2);
-		const p = [
-			{
-				x: Math.lendirx(r, d + 225),
-				y: Math.lendiry(r, d + 225)
-			},
-			{
-				x: Math.lendirx(r, d + 315),
-				y: Math.lendiry(r, d + 315)
-			},
-			{
-				x: Math.lendirx(r, d + 45),
-				y: Math.lendiry(r, d + 45)
-			},
-			{
-				x: Math.lendirx(r, d + 135),
-				y: Math.lendiry(r, d + 135)
-			}
-		];
-		this.polyBegin(x + p[0].x, y + p[0].y);
-		this.vertex(x + p[1].x, y + p[1].y);
-		this.vertex(x + p[2].x, y + p[2].y);
-		this.vertex(x + p[3].x, y + p[3].y);
 		this.polyEnd();
 	}
-	this.clearRect = function(x, y, w, h) {
-		ctx.clearRect(x, y, w, h);
+	static star(x, y, r, outline) {
+		this.starTransformed(x, y, r, 0, outline);
+	}
+	static setCap(cap) {
+		CTX.lineCap = cap;
+	}
+	static resetCap() {
+		CTX.lineCap = Cap.butt;
+	}
+	static clearRect(x, y, w, h) {
+		CTX.clearRect(x, y, w, h);
 	}
 }
 
-function BranthObject(k) {
-	this.k = k;
-	this.o = [];
-	for (let i = 0; i < this.k.length; i++) {
-		this.o.push([]);
+class BranthObject {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
 	}
-	this.getIndex = function(k) {
-		for (let i = 0; i < this.k.length; i++) {
-			if (k == this.k[i]) {
-				return i;
-			}
-		}
-		return -1;
-	}
-	this.add = function(k, o) {
-		let i = this.getIndex(k);
-		this.o[i].push(o);
-	}
-	this.take = function(k) {
-		let i = this.getIndex(k);
-		return this.o[i];
-	}
-	this.trash = function(k, j) {
-		let i = this.getIndex(k);
-		delete this.o[i][j];
-	}
-	this.clear = function(k) {
-		let i = this.getIndex(k);
-		this.o[i] = [];
-	}
-	this.clearAll = function() {
-		for (let i = 0; i < this.o.length; i++) {
-			this.o[i] = [];
-		}
-	}
-	this.getNotNullLength = function(k) {
-		let i = this.getIndex(k);
-		let count = 0;
-		for (let j = 0; j < this.o[i].length; j++) {
-			if (this.o[i][j] != null) {
-				count++;
-			}
-		}
-		return count;
-	}
-	this.update = function() {
-		for (let i = 0; i < this.o.length; i++) {
-			for (let j = 0; j < this.o[i].length; j++) {
-				let o = this.o[i][j];
-				if (o != null) {
-					o.update();
+	static ID = 0;
+	id = BranthObject.ID++;
+	active = true;
+	visible = true;
+	update() {}
+	render() {}
+	renderUI() {}
+	alarm = [];
+	alarmFunction = [
+		this.alarm0,
+		this.alarm1,
+		this.alarm2,
+		this.alarm3,
+		this.alarm4,
+		this.alarm5
+	];
+	alarmUpdate() {
+		if (this.alarm) {
+			for (const i in this.alarm) {
+				if (this.alarm[i] !== null) {
+					if (this.alarm[i] > 0) {
+						this.alarm[i] = Math.max(0, this.alarm[i] - Time.deltaTime);
+					}
+					else if (this.alarm[i] != -1) {
+						if (this.alarmFunction[i]) this.alarmFunction[i]();
+						if (this.alarm[i] <= 0) this.alarm[i] = -1;
+					}
 				}
 			}
 		}
 	}
 }
 
-function BranthParticle(k, x, y, dx, dy, r, d, dd, a, c, life, shape, grav) {
-	this.x = x;
-	this.y = y;
-	this.dx = dx;
-	this.dy = dy;
-	this.r = r;
-	this.d = d;
-	this.a = a;
-	this.c = c;
-	this.life = life;
-	this.shape = shape;
-	this.i = OBJ.take(k).length;
-	this.update = function() {
-		this.a = Math.max(0, this.a - Time.deltaTime / this.life);
-		if (this.a <= 0) {
-			OBJ.trash(k, this.i);
+class OBJ {
+	static list = [];
+	static classes = [];
+	static add(cls) {
+		this.list.push([]);
+		this.classes.push(cls);
+	}
+	static create(cls, x, y) {
+		if (this.classes.includes(cls)) {
+			const i = new cls(x, y);
+			this.list[this.classes.indexOf(cls)].push(i);
+			i.start();
+			return i;
 		}
-		this.x += this.dx;
-		this.y += this.dy;
-		this.d += dd;
-		this.dy += grav;
-		this.render();
-	}
-	this.render = function() {
-		Draw.setAlpha(this.a);
-		Draw.setColor(this.c);
-		switch (this.shape) {
-			case Shape.rect:
-				Draw.rectd(this.x, this.y, this.r, this.r, this.d);
-				break;
-			case Shape.star:
-				Draw.star(this.x, this.y, this.r, this.d);
-				break;
-			case Shape.circle:
-				Draw.circle(this.x, this.y, this.r, false);
-				break;
-			default: break;
-		}
-		Draw.setAlpha(1);
-	}
-}
-
-function BranthEmitter(key) {
-	this.key = key;
-	this.x = {
-		min: 0,
-		max: 100
-	}
-	this.y = {
-		min: 0,
-		max: 100
-	}
-	this.spd = {
-		min: 1,
-		max: 2
-	}
-	this.r = {
-		min: 2,
-		max: 8
-	}
-	this.d = {
-		min: 0,
-		max: 360
-	}
-	this.dspd = {
-		min: 5,
-		max: 10
-	}
-	this.a = {
-		min: 1,
-		max: 1
-	}
-	this.c = C.black;
-	this.life = {
-		min: 3000,
-		max: 4000
-	}
-	this.shape = Shape.rect;
-	this.grav = {
-		min: 0.01,
-		max: 0.01
-	}
-	this.setKey = function(k) {
-		this.key = k;
-	}
-	this.resetKey = function() {
-		this.key = key;
-	}
-	this.setArea = function(xmin, xmax, ymin, ymax) {
-		this.x.min = xmin;
-		this.x.max = xmax;
-		this.y.min = ymin;
-		this.y.max = ymax;
-	}
-	this.setSpeed = function(min, max) {
-		this.spd.min = min;
-		this.spd.max = max;
-	}
-	this.setSize = function(min, max) {
-		this.r.min = min;
-		this.r.max = max;
-	}
-	this.setDirection = function(min, max) {
-		this.d.min = min;
-		this.d.max = max;
-	}
-	this.setAngleSpeed = function(min, max) {
-		this.dspd.min = min;
-		this.dspd.max = max;
-	}
-	this.setAlpha = function(min, max) {
-		this.a.min
-	}
-	this.setColor = function(c) {
-		this.c = c;
-	}
-	this.setLife = function(min, max) {
-		this.life.min = min;
-		this.life.max = max;
-	}
-	this.setShape = function(s) {
-		this.shape = s;
-	}
-	this.setGravity = function(min, max) {
-		this.grav.min = min;
-		this.grav.max = max;
-	}
-	this.preset = function(s) {
-		switch (s) {
-			case 'puff':
-				this.setSpeed(2, 3);
-				this.setSize(5, 10);
-				this.setDirection(0, 360);
-				this.setAngleSpeed(0, 0);
-				this.setAlpha(0.8, 1);
-				this.setColor(C.white);
-				this.setLife(250, 400);
-				this.setShape(Shape.circle);
-				this.setGravity(0, 0);
-				break;
-			case 'starpuff':
-				this.setSpeed(4, 5);
-				this.setSize(5, 8);
-				this.setDirection(0, 360);
-				this.setAngleSpeed(-5, 5);
-				this.setAlpha(0.5, 1);
-				this.setColor(C.yellow);
-				this.setLife(1000, 2000);
-				this.setShape(Shape.star);
-				this.setGravity(0.1, 0.1);
-				break;
-			default: break;
+		else {
+			console.log(`Class not found: ${cls}`);
+			return null;
 		}
 	}
-	this.emit = function(n) {
-		for (let i = 0; i < n; i++) {
-			const len = Math.range(this.spd.min, this.spd.max);
-			const dir = Math.range(this.d.min, this.d.max);
-			const p = new BranthParticle(
-				this.key,
-				Math.range(this.x.min, this.x.max),
-				Math.range(this.y.min, this.y.max),
-				Math.lendirx(len, dir),
-				Math.lendiry(len, dir),
-				Math.range(this.r.min, this.r.max),
-				dir,
-				Math.range(this.dspd.min, this.dspd.max),
-				Math.range(this.a.min, this.a.max),
-				this.c,
-				Math.range(this.life.min, this.life.max),
-				this.shape,
-				Math.range(this.grav.min, this.grav.max)
-			);
-			OBJ.add(this.key, p);
+	static update() {
+		for (const o of this.list) {
+			for (const i of o) {
+				if (i.active) {
+					i.update();
+				}
+				if (i.visible) {
+					i.render();
+				}
+			}
 		}
 	}
 }
 
-/* Objects goes here
-*
-*
-*
-* */
+const UI = {
+	update() {
+		for (const o of OBJ.list) {
+			for (const i of o) {
+				if (i.visible) {
+					i.renderUI();
+				}
+			}
+		}
+	}
+}
 
-const BranthRequestAnimationFrame = window.requestAnimationFrame
+class BranthRoom {
+	constructor(name, w, h) {
+		this.name = name;
+		this.w = w;
+		this.h = h;
+	}
+	start() {}
+}
+
+class Room {
+	_name = '';
+	static list = [];
+	static get names() {
+		return this.list.map(x => x.name);
+	}
+	static get id() {
+		return this.names.indexOf(this._name);
+	}
+	static get name() {
+		return this._name;
+	}
+	static get current() {
+		return this.list[this.id] || new BranthRoom(this._name, CANVAS.width, CANVAS.height);
+	}
+	static get w() {
+		return this.current.w;
+	}
+	static get h() {
+		return this.current.h;
+	}
+	static add(room) {
+		this.list.push(room);
+	}
+	static start(name) {
+		if (this.names.includes(name)) {
+			this._name = name;
+			CANVAS.width = this.w;
+			CANVAS.height = this.h;
+			this.current.start();
+		}
+		else {
+			console.log(`Room not found: ${name}`);
+		}
+	}
+}
+
+const RAF = window.requestAnimationFrame
 	|| window.msRequestAnimationFrame
 	|| window.mozRequestAnimationFrame
 	|| window.webkitRequestAnimationFrame
-	|| function(f) { return setTimeout(f, 1000 / 60) }
-
-window.addEventListener('keyup', (e) => { Inpt.up(e); });
-window.addEventListener('keydown', (e) => { Inpt.down(e); });
-
-const World = {
-	scene: {
-		c: '',
-		list: {
-			menu: 'menu',
-			game: 'game'
-		},
-		transition: {
-			time: 0,
-			alpha: 0,
-			color: C.white,
-			delay: 500,
-			interval: 1000
-		},
-		isTransitioning: false
-	},
-	startTransition: function() {
-		this.scene.transition.time = 0;
-		this.scene.transition.alpha = 1;
-		this.scene.isTransitioning = true;
-	},
-	changeScene: function(s) {
-		OBJ.clearAll();
-		this.scene.c = s;
-		this.start();
-	},
+	|| function(f) { return setTimeout(f, FRAME_RATE) }
+const BRANTH = {
 	start: function() {
-		switch (this.scene.c) {
-			case this.scene.list['menu']:
-				Emtr.preset('puff');
-				Emtr.setArea(Room.x, Room.mid.x, Room.y, Room.end.y);
-				Emtr.setColor(C.red);
-				Emtr.emit(20);
-				break;
-			case this.scene.list['game']:
-				Emtr.preset('puff');
-				Emtr.setArea(Room.mid.x, Room.end.x, Room.y, Room.end.y);
-				Emtr.setColor(C.blue);
-				Emtr.emit(20);
-				break;
-			default:
-				this.changeScene(this.scene.list['menu']);
-				break;
-		}
-	},
-	update: function() {
-		if (this.scene.isTransitioning) {
-			this.scene.transition.time += Time.deltaTime;
-			if (this.scene.transition.time >= this.scene.transition.delay) {
-				this.scene.transition.alpha = Math.clamp(this.scene.transition.alpha - (Time.deltaTime / this.scene.transition.interval), 0, 1);
-			}
-			if (this.scene.transition.alpha <= 0) {
-				this.scene.isTransitioning = false;
-			}
-		}
-		switch (this.scene.c) {
-			case this.scene.list['menu']:
-				if (!this.scene.isTransitioning) {
-					Emtr.preset('starpuff');
-					Emtr.setArea(Room.mid.x, Room.end.x, Room.y, Room.end.y);
-					Emtr.setColor(C.blue);
-					Emtr.emit(1);
-					if (Inpt.keyDown(KeyCode.Enter)) {
-						this.changeScene(this.scene.list['game']);
-					}
-				}
-				break;
-			case this.scene.list['game']:
-				Emtr.preset('starpuff');
-				Emtr.setArea(Room.x, Room.mid.x, Room.y, Room.end.y);
-				Emtr.setColor(C.red);
-				Emtr.emit(1);
-				if (Inpt.keyDown(KeyCode.Escape)) {
-					this.changeScene(this.scene.list['menu']);
-				}
-				break;
-			default: break;
-		}
-	}
-};
-
-const Time = new BranthTime();
-const Room = new BranthScene(0, 0, 640, 360);
-const View = new BranthScene(0, 0, 640, 360);
-const Inpt = new BranthInput();
-const Canv = new BranthCanvas(View.w, View.h, C.black);
-const Draw = new BranthDraw(Canv.getContext('2d'));
-const OBJ = new BranthObject(['particle']);
-const Emtr = new BranthEmitter('particle');
-
-const UI = {
-	update: function() {
-		this.render();
-	},
-	render: function() {
-		switch (World.scene.c) {
-			case World.scene.list['menu']:
-				Draw.setColor(C.white);
-				Draw.text(32, 32, 'Menu');
-				Draw.text(32, 48, 'enter');
-				break;
-			case World.scene.list['game']:
-				Draw.setColor(C.white);
-				Draw.text(32, 32, 'Game');
-				Draw.text(32, 48, 'esc');
-				break;
-			default: break;
-		}
-		if (World.scene.isTransitioning) {
-			Draw.setAlpha(World.scene.transition.alpha);
-			Draw.setColor(World.scene.transition.color);
-			Draw.rect(View.x, View.y, View.w, View.h);
-			Draw.setAlpha(1);
-		}
-	}
-}
-
-const Game = {
-	start: function() {
-		World.startTransition();
-		World.start();
+		PARENT.appendChild(CANVAS);
 		this.update();
 	},
 	update: function(t) {
-		World.update();
 		Time.update(t);
-		Room.update();
-		View.update();
-		Inpt.update();
-		Draw.clearRect(View.x, View.y, View.w, View.h);
+		Draw.clearRect(0, 0, Room.w, Room.h);
 		OBJ.update();
 		UI.update();
-		BranthRequestAnimationFrame(Game.update);
+		RAF(BRANTH.update);
 	}
-}
-
-window.onload = function() {
-	body = document.querySelector('body');
-	function preventScroll(e) {
-		const keyCodes = [32, 37, 38, 39, 40];
-		if (keyCodes.includes(e.keyCode)) {
-			e.preventDefault();
-		}
-	}
-	body.addEventListener('keydown', preventScroll, false);
-	body.appendChild(Canv);
-	Game.start();
-}
+};

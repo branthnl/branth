@@ -8,9 +8,18 @@ Math.radtodeg = (d = 1) => d * 180 / Math.PI;
 Math.lendirx = (l, d) => l * Math.cos(Math.degtorad(d));
 Math.lendiry = (l, d) => l * Math.sin(Math.degtorad(d));
 Math.lendir = (l, d) => ({ x: Math.lendirx(l, d), y: Math.lendiry(l, d) });
+Math.pointdis = (x1, y1, x2, y2) => Math.hypot((x2 - x1), (y2 - y1));
+Math.pointdir = (x1, y1, x2, y2) => 90 - Math.radtodeg(Math.atan2((x2 - x1), (y2 - y1)));
 Math.randneg = (t = 0.5) => Math.range(0, 1) > t? -1 : 1;
 Math.lerp = (from, to, t) => Math.range(from, to, t);
 Math.choose = (...args) => args[Math.irange(0, args.length)];
+
+class Vector {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+}
 
 const PARENT = document.body;
 const CANVAS = document.createElement('canvas');
@@ -45,10 +54,10 @@ const Time = {
 		}
 	},
 	toSeconds(t) {
-		return Math.ceil(t / 1000);
+		return Math.ceil((t || this.time) / 1000);
 	},
 	toMinutes(t) {
-		return Math.ceil(t / 60000);
+		return Math.ceil((t || this.time) / 60000);
 	},
 	toClockSeconds(t) {
 		return Math.floor(t / 1000) % 60;
@@ -357,17 +366,24 @@ const Input = {
 	mouseHold(button) {
 		return this.list[1][button].hold;
 	},
-	eventmouseup(e) {
-		this.list[1][e.button].up();
-	},
-	eventmousemove(e) {
+	updateMousePosition(e) {
 		const b = CANVAS.getBoundingClientRect();
 		this.mousePosition.x = e.clientX - b.x;
 		this.mousePosition.y = e.clientY - b.y;
 	},
+	eventmouseup(e) {
+		this.updateMousePosition(e);
+		this.list[1][e.button].up();
+	},
+	eventmousemove(e) {
+		this.updateMousePosition(e);
+	},
 	eventmousedown(e) {
 		const m = this.list[1][e.button];
-		if (!m.hold) m.down();
+		if (!m.hold) {
+			this.updateMousePosition(e);
+			m.down();
+		}
 	},
 	touches: [],
 	get touchCount() {
@@ -663,6 +679,14 @@ class BranthImage {
 const Draw = {
 	list: [[], []],
 	names: [[], []],
+	hasName(name) {
+		for (const n of this.names) {
+			if (n.includes(name)) {
+				return true;
+			}
+		}
+		return false;
+	},
 	add(name, ...args) {
 		if (args.length === 1) {
 			this.addImage(name, args[0]);
@@ -696,20 +720,60 @@ const Draw = {
 		this.list[1].push(s);
 		this.names[1].push(name);
 	},
-	image(name, x, y) {
-		CTX.drawImage(this.list[0][this.names[0].indexOf(name)], x, y);
+	getImage(name) {
+		return this.list[0][this.names[0].indexOf(name)];
 	},
-	sprite(name, i, x, y) {
+	getSprite(name) {
+		return this.list[1][this.names[1].indexOf(name)];
+	},
+	origin(x, y) {
+		return new Vector(x, y);
+	},
+	image(name, x, y, center) {
+		const img = this.list[0][this.names[0].indexOf(name)];
+		if (img) {
+			let dx = x - (center? img.width * 0.5 : 0);
+			let dy = y - (center? img.height * 0.5 : 0);
+			if (center instanceof Vector) {
+				dx = x - center.x;
+				dy = y - center.y;
+			}
+			CTX.drawImage(img, dx, dy);
+		}
+		else throw new Error(`Image not found: ${name}`);
+	},
+	sprite(name, i, x, y, center) {
 		const s = this.list[1][this.names[1].indexOf(name)];
-		const sx = s.hPixelOffset + s.hCellOffset * s.w + (s.w + s.hGap) * (Math.floor(i) % s.column);
-		const sy = s.vPixelOffset + s.vCellOffset * s.h + (s.h + s.vGap) * Math.floor(i / s.amount);
-		const sWidth = s.w;
-		const sHeight = s.h;
-		const dx = x;
-		const dy = y;
-		const dWidth = s.w;
-		const dHeight = s.h;
-		CTX.drawImage(s.img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+		if (s) {
+			const sx = s.hPixelOffset + s.hCellOffset * s.w + (s.w + s.hGap) * (Math.floor(i) % s.column);
+			const sy = s.vPixelOffset + s.vCellOffset * s.h + (s.h + s.vGap) * Math.floor(i / s.amount);
+			const sWidth = s.w;
+			const sHeight = s.h;
+			let dx = x - (center? s.w * 0.5 : 0);
+			let dy = y - (center? s.h * 0.5 : 0);
+			if (center instanceof Vector) {
+				dx = x - center.x;
+				dy = y - center.y;
+			}
+			const dWidth = s.w;
+			const dHeight = s.h;
+			CTX.drawImage(s.img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+		}
+		else throw new Error(`Sprite not found: ${name}`);
+	},
+	imageTransformed(name, x, y, r, center) {
+		CTX.save();
+		CTX.translate(x, y);
+		CTX.rotate(Math.degtorad(r));
+		this.image(name, 0, 0, center);
+		CTX.restore();
+	},
+	spriteTransformed(name, i, x, y, r, center) {
+		CTX.save();
+		CTX.translate(x, y);
+		CTX.rotate(Math.degtorad(r));
+		this.sprite(name, i, 0, 0, center);
+		CTX.restore();
 	},
 	setAlpha(a) {
 		CTX.globalAlpha = a;
@@ -908,6 +972,24 @@ const Draw = {
 	stroke() {
 		CTX.stroke();
 	},
+	save() {
+		CTX.save();
+	},
+	scale(x, y) {
+		CTX.save();
+		CTX.scale(x, y);
+	},
+	rotate(d) {
+		CTX.save();
+		CTX.rotate(Math.degtorad(d));
+	},
+	translate(x, y) {
+		CTX.save();
+		CTX.translate(x, y);
+	},
+	restore() {
+		CTX.restore();
+	},
 	clearRect(x, y, w, h) {
 		CTX.clearRect(x, y, w, h);
 	}
@@ -945,7 +1027,11 @@ const OBJ = {
 		if (this.classes.includes(cls)) {
 			const i = new cls(x, y);
 			this.list[this.classes.indexOf(cls)].push(i);
-			i.start();
+			i.awake();
+			if (i.active) {
+				i.start();
+				i.lateStart();
+			}
 			return i;
 		}
 		console.log(`Class not found: ${cls.name}\n- Try add OBJ.add(${cls.name}); in your code.`);
@@ -987,7 +1073,9 @@ const OBJ = {
 			for (const i of o) {
 				if (i) {
 					if (i.active) {
+						i.earlyUpdate();
 						i.update();
+						i.lateUpdate();
 					}
 				}
 			}
@@ -1028,14 +1116,19 @@ class BranthObject {
 	constructor(x, y) {
 		this.id = OBJ.ID++;
 		this.depth = 0;
-		this.x = x;
-		this.y = y;
-		this.def = { x, y }
 		this.active = true;
 		this.visible = true;
+		this.x = x;
+		this.y = y;
+		this.xs = x;
+		this.ys = y;
 	}
+	awake() {}
 	start() {}
+	lateStart() {}
+	earlyUpdate() {}
 	update() {}
+	lateUpdate() {}
 	render() {}
 	renderUI() {}
 }
@@ -1072,6 +1165,30 @@ class BranthBehaviour extends BranthObject {
 				}
 			}
 		}
+	}
+}
+
+class BranthGameObject extends BranthBehaviour {
+	constructor(x, y) {
+		super(x, y);
+		this.xp = x;
+		this.yp = y;
+		this.spriteName = '';
+		this.spriteIndex = 0;
+		this.spriteAngle = 0;
+		this.spriteCenter = true;
+	}
+	earlyUpdate() {
+		this.xp = this.x;
+		this.yp = this.y;
+	}
+	drawSelf() {
+		if (Draw.hasName(this.spriteName)) {
+			Draw.spriteTransformed(this.spriteName, this.spriteIndex % Draw.getSprite(this.spriteName).amount, this.x, this.y, this.spriteAngle, this.spriteCenter);
+		}
+	}
+	render() {
+		this.drawSelf();
 	}
 }
 

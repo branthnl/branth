@@ -14,11 +14,15 @@ Math.lerp = (from, to, t) => Math.range(from, to, t);
 Math.choose = (...args) => args[Math.irange(0, args.length)];
 
 const PARENT = document.body;
-const INPUT_PARENT = window;
+const AUDIO_PARENT = PARENT;
 const CANVAS = document.createElement('canvas');
 const CTX = CANVAS.getContext('2d');
+const INPUT_KEY_PARENT = window;
+const INPUT_KEY_PREVENT_DEFAULT = true;
+const INPUT_MOUSE_PARENT = window;
+const INPUT_TOUCH_PARENT = CANVAS;
+const DEFAULT_FONT = 'Fresca, sans-serif';
 const FRAME_RATE = 1000 / 60;
-const DEFAULT_FONT = 'sans-serif';
 const DEBUG_MODE = true;
 if (!DEBUG_MODE) console.log = () => {};
 
@@ -57,6 +61,89 @@ const Time = {
 	toClockMinutes0(t) {
 		let m = Math.abs(this.toClockMinutes(t));
 		return `${(m < 10? '0' : '')}${m}`;
+	}
+};
+
+class BranthAudio {
+	constructor(paths) {
+		const a = document.createElement('audio');
+		for (const p of paths) {
+			const ext = p.split('.').pop();
+			const type = ext === 'ogg'? 'ogg' : (ext === 'mp3'? 'mpeg' : null);
+			if (type === null) {
+				console.log(`Audio file extension not supported: .${ext}`);
+				return;
+			}
+			const s = document.createElement('source');
+			s.src = p;
+			s.type = `audio/${type}`;
+			a.appendChild(s);
+		}
+		return a;
+	}
+}
+
+const Audio = {
+	list: [],
+	names: [],
+	add(name, ...paths) {
+		for (const p of paths) {
+			const ext = p.split('.').pop();
+			if (ext !== 'ogg' && ext != 'mp3') {
+				console.log(`Audio file extension not supported: .${ext}`);
+				return;
+			}
+		}
+		const audio = new BranthAudio(paths);
+		AUDIO_PARENT.appendChild(audio);
+		this.list.push(audio);
+		this.names.push(name);
+	},
+	play(name) {
+		const a = this.list[this.names.indexOf(name)];
+		if (a) {
+			a.currentTime = 0;
+			a.play();
+		}
+	},
+	loop(name) {
+		const a = this.list[this.names.indexOf(name)];
+		if (a) {
+			a.loop = true;
+			a.currentTime = 0;
+			a.play();
+		}
+	},
+	stop(name) {
+		const a = this.list[this.names.indexOf(name)];
+		if (a) {
+			a.pause();
+			a.currentTime = 0;
+			a.loop = false;
+		}
+	},
+	isPlaying(name) {
+		const a = this.list[this.names.indexOf(name)];
+		if (a) {
+			return a.currentTime > 0 && !s.paused;
+		}
+		return false;
+	},
+	setVolume(name, n) {
+		const a = this.list[this.names.indexOf(name)];
+		if (a) {
+			a.volume = Math.clamp(n, 0, 1);
+			if (n < 0 || n > 1) {
+				console.log(`Audio volume clamped to: ${a.volume}`);
+			}
+		}
+	},
+	getVolume(name) {
+		const a = this.list[this.names.indexOf(name)];
+		if (a) {
+			return a.volume;
+		}
+		console.log(`Audio not found: ${name}`);
 	}
 };
 
@@ -185,60 +272,125 @@ class BranthKey {
 	}
 }
 
+const Mouse = {
+	Left: 0,
+	Middle: 1,
+	Right: 2
+};
+
+class BranthMouse extends BranthKey {
+	get button() {
+		return this.keyCode;
+	}
+}
+
 const Input = {
-	list: [],
+	list: [[], [], []],
 	add(keyCode) {
-		this.list.push(new BranthKey(keyCode));
+		this.list[0].push(new BranthKey(keyCode));
 	},
 	update() {},
 	reset() {
-		for (const k of this.list) {
+		for (const k of this.list[0]) {
 			k.reset();
+		}
+		for (const m of this.list[1]) {
+			m.reset();
 		}
 	},
 	keyUp(keyCode) {
-		for (const k of this.list) {
+		for (const k of this.list[0]) {
 			if (k.keyCode === keyCode) {
 				return k.released;
 			}
 		}
 	},
 	keyDown(keyCode) {
-		for (const k of this.list) {
+		for (const k of this.list[0]) {
 			if (k.keyCode === keyCode) {
 				return k.pressed;
 			}
 		}
 	},
 	keyHold(keyCode) {
-		for (const k of this.list) {
+		for (const k of this.list[0]) {
 			if (k.keyCode === keyCode) {
 				return k.hold;
 			}
 		}
 	},
-	eventup(e) {
-		for (const k of this.list) {
+	mousePosition: {
+		x: 0,
+		y: 0
+	},
+	mouseUp(button) {
+		for (const m of this.list[1]) {
+			if (m.button === button) {
+				return m.released;
+			}
+		}
+	},
+	mouseDown(button) {
+		for (const m of this.list[1]) {
+			if (m.button === button) {
+				return m.pressed;
+			}
+		}
+	},
+	mouseHold(button) {
+		for (const m of this.list[1]) {
+			if (m.button === button) {
+				return m.hold;
+			}
+		}
+	},
+	eventkeyup(e) {
+		for (const k of this.list[0]) {
 			if (k.keyCode == e.which || k.keyCode == e.keyCode) {
 				k.up();
 			}
 		}
 	},
-	eventdown(e) {
-		for (const k of this.list) {
+	eventkeydown(e) {
+		for (const k of this.list[0]) {
 			if (k.keyCode == e.which || k.keyCode == e.keyCode) {
 				if (!k.hold) k.down();
 			}
 		}
-	}
+	},
+	eventmouseup(e) {
+		for (const m of this.list[1]) {
+			if (m.button == e.button) {
+				m.up();
+			}
+		}
+	},
+	eventmousemove(e) {
+		const b = CANVAS.getBoundingClientRect();
+		this.mousePosition.x = e.clientX - b.x;
+		this.mousePosition.y = e.clientY - b.y;
+	},
+	eventmousedown(e) {
+		for (const m of this.list[1]) {
+			if (m.button == e.button) {
+				if (!m.hold) m.down();
+			}
+		}
+	},
+	eventtouchend(e) {},
+	eventtouchmove(e) {},
+	eventtouchstart(e) {}
 };
 
 for (const keyCode of Object.values(KeyCode)) {
 	Input.add(keyCode);
 }
 
-INPUT_PARENT.addEventListener('keyup', (e) => Input.eventup(e));
-INPUT_PARENT.addEventListener('keydown', (e) => Input.eventdown(e));
+Input.list[1] = [
+	new BranthMouse(Mouse.Left),
+	new BranthMouse(Mouse.Middle),
+	new BranthMouse(Mouse.Right)
+];
 
 const C = {
 	aliceBlue: '#f0f8ff',
@@ -762,9 +914,10 @@ class BranthAlarm {
 class BranthObject extends BranthAlarm {
 	constructor(x, y) {
 		super();
+		this.id = OBJ.ID++;
 		this.x = x;
 		this.y = y;
-		this.id = OBJ.ID++;
+		this.def = { x, y }
 		this.active = true;
 		this.visible = true;
 	}
@@ -776,9 +929,10 @@ class BranthObject extends BranthAlarm {
 
 class BranthBasicObject {
 	constructor(x, y) {
+		this.id = OBJ.ID++;
 		this.x = x;
 		this.y = y;
-		this.id = OBJ.ID++;
+		this.def = { x, y }
 		this.active = true;
 		this.visible = true;
 	}
@@ -1085,6 +1239,22 @@ const RAF = window.requestAnimationFrame
 	|| function(f) { return setTimeout(f, FRAME_RATE) }
 const BRANTH = {
 	start: function() {
+		INPUT_KEY_PARENT.addEventListener('keyup', (e) => Input.eventkeyup(e));
+		INPUT_KEY_PARENT.addEventListener('keydown', (e) => {
+			if (INPUT_KEY_PREVENT_DEFAULT) {
+				const keyCodes = [32, 37, 38, 39, 40];
+				if (keyCodes.includes(e.keyCode)) {
+					e.preventDefault();
+				}
+			}
+			Input.eventkeydown(e);
+		});
+		INPUT_MOUSE_PARENT.addEventListener('mouseup', (e) => Input.eventmouseup(e));
+		INPUT_MOUSE_PARENT.addEventListener('mousemove', (e) => Input.eventmousemove(e));
+		INPUT_MOUSE_PARENT.addEventListener('mousedown', (e) => Input.eventmousedown(e));
+		INPUT_TOUCH_PARENT.addEventListener('touchend', (e) => Input.eventtouchend(e));
+		INPUT_TOUCH_PARENT.addEventListener('touchmove', (e) => Input.eventtouchmove(e));
+		INPUT_TOUCH_PARENT.addEventListener('touchstart', (e) => Input.eventtouchstart(e));
 		PARENT.appendChild(CANVAS);
 		this.update();
 	},

@@ -13,9 +13,10 @@ Math.lerp = (from, to, t) => Math.range(from, to, t);
 Math.choose = (...args) => args[Math.irange(0, args.length)];
 
 const PARENT = document.body;
-const AUDIO_PARENT = PARENT;
 const CANVAS = document.createElement('canvas');
 const CTX = CANVAS.getContext('2d');
+const AUDIO_PARENT = CANVAS;
+const IMAGE_PARENT = CANVAS;
 const INPUT_KEY_PARENT = window;
 const INPUT_KEY_PREVENT_DEFAULT = true;
 const INPUT_MOUSE_PARENT = window;
@@ -650,7 +651,66 @@ const Poly = {
 	triangleListFill: 'name: triangleList, quantity: 3, closePath: false, outline: false'
 };
 
+class BranthImage {
+	constructor(path) {
+		const img = document.createElement('img');
+		img.src = path;
+		img.style.display = 'none';
+		return img;
+	}
+}
+
 const Draw = {
+	list: [[], []],
+	names: [[], []],
+	add(name, ...args) {
+		if (args.length === 1) {
+			this.addImage(name, args[0]);
+		}
+		else {
+			this.addSprite(name, args);
+		}
+	},
+	addImage(name, path) {
+		const img = new BranthImage(path);
+		IMAGE_PARENT.appendChild(img);
+		this.list[0].push(img);
+		this.names[0].push(name);
+	},
+	addSprite(name, args) {
+		const img = new BranthImage(args[0]);
+		IMAGE_PARENT.appendChild(img);
+		const s = {
+			img: img,
+			amount: args[1],
+			column: args[2],
+			w: args[3],
+			h: args[4],
+			hCellOffset: args[5] || 0,
+			vCellOffset: args[6] || 0,
+			hPixelOffset: args[7] || 0,
+			vPixelOffset: args[8] || 0,
+			hGap: args[9] || 0,
+			vGap: args[10] || 0
+		}
+		this.list[1].push(s);
+		this.names[1].push(name);
+	},
+	image(name, x, y) {
+		CTX.drawImage(this.list[0][this.names[0].indexOf(name)], x, y);
+	},
+	sprite(name, i, x, y) {
+		const s = this.list[1][this.names[1].indexOf(name)];
+		const sx = s.hPixelOffset + s.hCellOffset * s.w + (s.w + s.hGap) * (Math.floor(i) % s.column);
+		const sy = s.vPixelOffset + s.vCellOffset * s.h + (s.h + s.vGap) * Math.floor(i / s.amount);
+		const sWidth = s.w;
+		const sHeight = s.h;
+		const dx = x;
+		const dy = y;
+		const dWidth = s.w;
+		const dHeight = s.h;
+		CTX.drawImage(s.img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+	},
 	setAlpha(a) {
 		CTX.globalAlpha = a;
 	},

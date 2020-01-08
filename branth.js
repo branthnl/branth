@@ -45,6 +45,28 @@ const OBJ_DEPTH_RENDER = true;
 const DEBUG_MODE = true;
 if (!DEBUG_MODE) console.log = () => {};
 
+CANVAS.style.backgroundImage = `radial-gradient(white 33%, gainsboro, lightGray)`;
+
+const CanvasScaler = {
+	get w() {
+		const b = CANVAS.getBoundingClientRect();
+		return CANVAS.width / b.width;
+	},
+	get h() {
+		const b = CANVAS.getBoundingClientRect();
+		return CANVAS.height / b.height;
+	},
+	get auto() {
+		const b = CANVAS.getBoundingClientRect();
+		if (CANVAS.width > CANVAS.height) {
+			return CANVAS.width / b.width;
+		}
+		else {
+			return CANVAS.height / b.height;
+		}
+	}
+};
+
 const Time = {
 	time: 0,
 	lastTime: 0,
@@ -359,10 +381,9 @@ const Input = {
 		}
 	},
 	screenToWorldPoint(p) {
-		const b = CANVAS.getBoundingClientRect();
 		return {
-			x: p.x * (CANVAS.width / b.width),
-			y: p.y * (CANVAS.height / b.height)
+			x: p.x * CanvasScaler.w,
+			y: p.y * CanvasScaler.h
 		}
 	},
 	mousePosition: {
@@ -401,8 +422,12 @@ const Input = {
 		}
 	},
 	touches: [],
+	changedTouches: [],
 	get touchCount() {
 		return this.touches.length;
+	},
+	get changedTouchCount() {
+		return this.changedTouches.length;
 	},
 	getTouch(id) {
 		return this.list[2][id];
@@ -418,6 +443,7 @@ const Input = {
 	},
 	updateTouches(e) {
 		this.touches = [];
+		this.changedTouches = [];
 		for (let i = 0; i < e.touches.length; i++) {
 			const b = CANVAS.getBoundingClientRect();
 			const t = {
@@ -426,6 +452,15 @@ const Input = {
 				y: e.touches[i].clientY - b.y
 			}
 			this.touches.push(t);
+		}
+		for (let i = 0; i < e.changedTouches.length; i++) {
+			const b = CANVAS.getBoundingClientRect();
+			const t = {
+				id: e.changedTouches[i].identifier,
+				x: e.changedTouches[i].clientX - b.x,
+				y: e.changedTouches[i].clientY - b.y
+			}
+			this.changedTouches.push(t);
 		}
 	},
 	eventtouchend(e) {
@@ -645,15 +680,15 @@ const C = {
 };
 
 const Font = {
-	small: '16px',
-	smallBold: 'bold 16px',
-	smallItalic: 'italic 16px',
-	medium: '24px',
-	mediumBold: 'bold 24px',
-	mediumItalic: 'italic 24px',
-	large: '36px',
-	largeBold: 'bold 36px',
-	largeItalic: 'italic 36px',
+	get s() {
+		return `${16 * CanvasScaler.auto}px`;
+	},
+	get m() {
+		return `${24 * CanvasScaler.auto}px`;
+	},
+	get l() {
+		return `${36 * CanvasScaler.auto}px`;
+	},
 	get size() {
 		return +CTX.font.split(' ').filter(x => x.includes('px'))[0].split('px').shift();
 	}
@@ -1199,6 +1234,9 @@ class BranthBehaviour extends BranthObject {
 			}
 		}
 	}
+	lateUpdate() {
+		this.alarmUpdate();
+	}
 }
 
 const Mask = {
@@ -1252,7 +1290,7 @@ class BranthGameObject extends BranthBehaviour {
 		this.spriteAngle = 0;
 		this.spriteCenter = true;
 		this.mask = [];
-		this.drawMask = true;
+		this.drawMask = false;
 		this.drawMaskAlpha = 1;
 		this.drawMaskColor = C.magenta;
 	}
@@ -1612,6 +1650,11 @@ const Room = {
 	render() {
 		this.current.render();
 	}
+};
+
+const View = {
+	x: 0,
+	y: 0
 };
 
 const UI = {

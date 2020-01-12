@@ -845,8 +845,23 @@ const Draw = {
 	setFont(font) {
 		CTX.font = `${font} ${DEFAULT_FONT}`;
 	},
+	setShadow(x, y, b, c) {
+		CTX.shadowBlur = b || 0;
+		CTX.shadowColor = c || C.black;
+		CTX.shadowOffsetX = x;
+		CTX.shadowOffsetY = y;
+	},
+	resetShadow() {
+		this.setShadow(0, 0, 0, C.black);
+	},
 	text(x, y, text) {
 		CTX.fillText(text, x, y);
+	},
+	textWidth(text) {
+		return CTX.measureText(text).width;
+	},
+	textHeight(text) {
+		return Font.size;
 	},
 	draw(outline, cap) {
 		if (outline) {

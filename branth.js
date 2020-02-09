@@ -1085,6 +1085,289 @@ class BranthBehaviour extends BranthObject {
 	}
 }
 
+const Shape = {
+	rect: 'Rect',
+	star: 'Star',
+	circle: 'Circle',
+	square: 'Square'
+};
+
+class BranthParticle extends BranthObject {
+	constructor(x, y, spd, spdinc, size, sizeinc, d, dinc, r, rinc, a, c, life, shape, grav, outline, roomPoint) {
+		super(x, y);
+		this.spd = spd;
+		this.spdinc = spdinc;
+		this.size = size;
+		this.sizeinc = sizeinc;
+		this.d = d;
+		this.dinc = dinc;
+		this.r = r;
+		this.rinc = rinc;
+		this.a = a;
+		this.c = c;
+		this.life = life;
+		this.shape = shape;
+		this.grav = grav;
+		this.outline = outline;
+		this.roomPoint = roomPoint;
+		this.g = grav;
+		this.pts = Math.choose(4, 5);
+	}
+	update() {
+		this.a = Math.max(0, this.a - Time.deltaTime / this.life);
+		if (this.a <= 0) {
+			OBJ.destroy(this.id);
+		}
+		this.x += Math.lendirx(this.spd, this.d);
+		this.y += Math.lendiry(this.spd, this.d) + Math.lendiry(this.g, 90);
+		this.size = Math.max(this.size + this.sizeinc, 0);
+		this.spd += this.spdinc;
+		this.g += this.grav;
+		this.d += this.dinc;
+		this.r += this.rinc;
+	}
+	render() {
+		const p = this.roomPoint? View.toView(this) : this;
+		Draw.setAlpha(this.a);
+		Draw.setColor(this.c);
+		switch (this.shape) {
+			case Shape.rect: Draw.rectRotated(p.x, p.y, this.size * 2, this.size, this.r, this.outline); break;
+			case Shape.star: Draw.starExtRotated(p.x, p.y, this.pts, this.size * 0.5, this.size, this.r, this.outline); break;
+			case Shape.circle: Draw.circle(p.x, p.y, this.size, this.outline); break;
+			case Shape.square: Draw.rectRotated(p.x, p.y, this.size * 2, this.size * 2, this.r, this.outline); break;
+		}
+		Draw.setAlpha(1);
+	}
+}
+
+OBJ.add(BranthParticle);
+
+const Emitter = {
+	depth: 0,
+	x: {
+		min: 0,
+		max: 100
+	},
+	y: {
+		min: 0,
+		max: 100
+	},
+	spd: {
+		min: 1,
+		max: 2
+	},
+	spdinc: {
+		min: 0,
+		max: 0
+	},
+	size: {
+		min: 2,
+		max: 8
+	},
+	sizeinc: {
+		min: 0,
+		max: 0
+	},
+	d: {
+		min: 0,
+		max: 360
+	},
+	dinc: {
+		min: 5,
+		max: 10
+	},
+	r: {
+		min: 0,
+		max: 360
+	},
+	rinc: {
+		min: 5,
+		max: 10
+	},
+	a: {
+		min: 1,
+		max: 1
+	},
+	c: C.white,
+	life: {
+		min: 3000,
+		max: 4000
+	},
+	shape: Shape.rect,
+	grav: {
+		min: 0.01,
+		max: 0.01
+	},
+	outline: false,
+	roomPoint: false,
+	setDepth(depth) {
+		this.depth = depth;
+	},
+	setArea(xmin, xmax, ymin, ymax) {
+		this.x.min = xmin;
+		this.x.max = xmax;
+		this.y.min = ymin;
+		this.y.max = ymax;
+	},
+	setSpeed(min, max) {
+		this.spd.min = min;
+		this.spd.max = max;
+	},
+	setSpeedInc(min, max) {
+		this.spdinc.min = min;
+		this.spdinc.max = max;
+	},
+	setSize(min, max) {
+		this.size.min = min;
+		this.size.max = max;
+	},
+	setSizeInc(min, max) {
+		this.sizeinc.min = min;
+		this.sizeinc.max = max;
+	},
+	setDirection(min, max) {
+		this.d.min = min;
+		this.d.max = max;
+	},
+	setDirectionInc(min, max) {
+		this.dinc.min = min;
+		this.dinc.max = max;
+	},
+	setRotation(min, max) {
+		this.r.min = min;
+		this.r.max = max;
+	},
+	setRotationInc(min, max) {
+		this.rinc.min = min;
+		this.rinc.max = max;
+	},
+	setAlpha(min, max) {
+		this.a.min = min;
+		this.a.max = max;
+	},
+	setColor(c) {
+		this.c = c;
+	},
+	setLife(min, max) {
+		this.life.min = min;
+		this.life.max = max;
+	},
+	setShape(s) {
+		this.shape = s;
+	},
+	setGravity(min, max) {
+		this.grav.min = min;
+		this.grav.max = max;
+	},
+	setOutline(outline) {
+		this.outline = outline;
+	},
+	setRoomPoint(roomPoint) {
+		this.roomPoint = roomPoint;
+	},
+	preset(s) {
+		switch (s) {
+			case 'sparkle':
+				this.setSpeed(2, 5);
+				this.setSpeedInc(-0.1, -0.1);
+				this.setSize(5, 10);
+				this.setSizeInc(-0.1, -0.1);
+				this.setDirection(0, 360);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 360);
+				this.setRotationInc(-5, 5);
+				this.setAlpha(1, 1);
+				this.setColor(C.white);
+				this.setLife(1000, 2000);
+				this.setShape(Shape.star);
+				this.setGravity(0, 0);
+				this.setOutline(Math.randbool());
+				this.setRoomPoint(false);
+				break;
+			case 'puff':
+				this.setSpeed(3, 5);
+				this.setSpeedInc(-0.1, -0.1);
+				this.setSize(5, 10);
+				this.setSizeInc(-0.2, -0.2);
+				this.setDirection(0, 360);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(1, 1);
+				this.setColor(C.white);
+				this.setLife(500, 800);
+				this.setShape(Shape.circle);
+				this.setGravity(0, 0);
+				this.setOutline(false);
+				this.setRoomPoint(false);
+				break;
+			case 'bubble':
+				this.preset('puff');
+				this.setOutline(true);
+				break;
+			case 'box':
+				this.setSpeed(0, 0);
+				this.setSpeedInc(0, 0);
+				this.setSize(2, 4);
+				this.setSizeInc(0, 0);
+				this.setDirection(0, 0);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(1, 1);
+				this.setColor(C.white);
+				this.setLife(300, 500);
+				this.setShape(Shape.square);
+				this.setGravity(0, 0);
+				this.setOutline(true);
+				this.setRoomPoint(false);
+				break;
+			case 'strip':
+				this.setSpeed(0, 0);
+				this.setSpeedInc(0, 0);
+				this.setSize(4, 4);
+				this.setSizeInc(0, 0);
+				this.setDirection(0, 0);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(0.15, 0.15);
+				this.setColor(C.black);
+				this.setLife(12000, 12000);
+				this.setShape(Shape.rect);
+				this.setGravity(0, 0);
+				this.setOutline(false);
+				this.setRoomPoint(true);
+				break;
+		}
+	},
+	emit(n) {
+		for (let i = 0; i < n; i++) {
+			const n = new BranthParticle(
+				Math.range(this.x.min, this.x.max),
+				Math.range(this.y.min, this.y.max),
+				Math.range(this.spd.min, this.spd.max),
+				Math.range(this.spdinc.min, this.spdinc.max),
+				Math.range(this.size.min, this.size.max),
+				Math.range(this.sizeinc.min, this.sizeinc.max),
+				Math.range(this.d.min, this.d.max),
+				Math.range(this.dinc.min, this.dinc.max),
+				Math.range(this.r.min, this.r.max),
+				Math.range(this.rinc.min, this.rinc.max),
+				Math.range(this.a.min, this.a.max),
+				this.c,
+				Math.range(this.life.min, this.life.max),
+				this.shape,
+				Math.range(this.grav.min, this.grav.max),
+				this.outline,
+				this.roomPoint
+			);
+			n.depth = this.depth;
+			OBJ.push(BranthParticle, n);
+		}
+	}
+};
+
 class BranthRoom {
 	constructor(name) {
 		this.name = name;
@@ -1179,8 +1462,11 @@ const View = {
 		this.int = int;
 		this.alarm = this.int;
 	},
-	convert(v) {
-		return Vector2.subtract(v, new Vector2(-this._x, -this._y));
+	toRoom(v) {
+		return Vector2.add(v, this);
+	},
+	toView(v) {
+		return Vector2.subtract(v, this);
 	},
 	update() {
 		if (this.alarm > 0) {
@@ -1192,287 +1478,6 @@ const View = {
 				this.xshake = 0;
 				this.yshake = 0;
 			}
-		}
-	}
-};
-
-class BranthGameObject extends BranthBehaviour {
-	get vx() {
-		return this.x - View.x;
-	}
-	get vy() {
-		return this.y - View.y;
-	}
-}
-
-const Shape = {
-	rect: 'Rect',
-	star: 'Star',
-	circle: 'Circle',
-	square: 'Square'
-};
-
-class BranthParticle extends BranthGameObject {
-	constructor(x, y, spd, spdinc, size, sizeinc, d, dinc, r, rinc, a, c, life, shape, grav, outline) {
-		super(x, y);
-		this.spd = spd;
-		this.spdinc = spdinc;
-		this.size = size;
-		this.sizeinc = sizeinc;
-		this.d = d;
-		this.dinc = dinc;
-		this.r = r;
-		this.rinc = rinc;
-		this.a = a;
-		this.c = c;
-		this.life = life;
-		this.shape = shape;
-		this.grav = grav;
-		this.outline = outline;
-		this.g = grav;
-		this.pts = Math.choose(4, 5);
-	}
-	update() {
-		this.a = Math.max(0, this.a - Time.deltaTime / this.life);
-		if (this.a <= 0) {
-			OBJ.destroy(this.id);
-		}
-		this.x += Math.lendirx(this.spd, this.d);
-		this.y += Math.lendiry(this.spd, this.d) + Math.lendiry(this.g, 90);
-		this.size = Math.max(this.size + this.sizeinc, 0);
-		this.spd += this.spdinc;
-		this.g += this.grav;
-		this.d += this.dinc;
-		this.r += this.rinc;
-	}
-	render() {
-		Draw.setAlpha(this.a);
-		Draw.setColor(this.c);
-		switch (this.shape) {
-			case Shape.rect: Draw.rectRotated(this.vx, this.vy, this.size * 2, this.size, this.r, this.outline); break;
-			case Shape.star: Draw.starExtRotated(this.vx, this.vy, this.pts, this.size * 0.5, this.size, this.r, this.outline); break;
-			case Shape.circle: Draw.circle(this.vx, this.vy, this.size, this.outline); break;
-			case Shape.square: Draw.rectRotated(this.vx, this.vy, this.size * 2, this.size * 2, this.r, this.outline); break;
-		}
-		Draw.setAlpha(1);
-	}
-}
-
-OBJ.add(BranthParticle);
-
-const Emitter = {
-	depth: 0,
-	x: {
-		min: 0,
-		max: 100
-	},
-	y: {
-		min: 0,
-		max: 100
-	},
-	spd: {
-		min: 1,
-		max: 2
-	},
-	spdinc: {
-		min: 0,
-		max: 0
-	},
-	size: {
-		min: 2,
-		max: 8
-	},
-	sizeinc: {
-		min: 0,
-		max: 0
-	},
-	d: {
-		min: 0,
-		max: 360
-	},
-	dinc: {
-		min: 5,
-		max: 10
-	},
-	r: {
-		min: 0,
-		max: 360
-	},
-	rinc: {
-		min: 5,
-		max: 10
-	},
-	a: {
-		min: 1,
-		max: 1
-	},
-	c: C.white,
-	life: {
-		min: 3000,
-		max: 4000
-	},
-	shape: Shape.rect,
-	grav: {
-		min: 0.01,
-		max: 0.01
-	},
-	outline: false,
-	setDepth(depth) {
-		this.depth = depth;
-	},
-	setArea(xmin, xmax, ymin, ymax) {
-		this.x.min = xmin;
-		this.x.max = xmax;
-		this.y.min = ymin;
-		this.y.max = ymax;
-	},
-	setSpeed(min, max) {
-		this.spd.min = min;
-		this.spd.max = max;
-	},
-	setSpeedInc(min, max) {
-		this.spdinc.min = min;
-		this.spdinc.max = max;
-	},
-	setSize(min, max) {
-		this.size.min = min;
-		this.size.max = max;
-	},
-	setSizeInc(min, max) {
-		this.sizeinc.min = min;
-		this.sizeinc.max = max;
-	},
-	setDirection(min, max) {
-		this.d.min = min;
-		this.d.max = max;
-	},
-	setDirectionInc(min, max) {
-		this.dinc.min = min;
-		this.dinc.max = max;
-	},
-	setRotation(min, max) {
-		this.r.min = min;
-		this.r.max = max;
-	},
-	setRotationInc(min, max) {
-		this.rinc.min = min;
-		this.rinc.max = max;
-	},
-	setAlpha(min, max) {
-		this.a.min = min;
-		this.a.max = max;
-	},
-	setColor(c) {
-		this.c = c;
-	},
-	setLife(min, max) {
-		this.life.min = min;
-		this.life.max = max;
-	},
-	setShape(s) {
-		this.shape = s;
-	},
-	setGravity(min, max) {
-		this.grav.min = min;
-		this.grav.max = max;
-	},
-	setOutline(outline) {
-		this.outline = outline;
-	},
-	preset(s) {
-		switch (s) {
-			case 'sparkle':
-				this.setSpeed(2, 5);
-				this.setSpeedInc(-0.1, -0.1);
-				this.setSize(5, 10);
-				this.setSizeInc(-0.1, -0.1);
-				this.setDirection(0, 360);
-				this.setDirectionInc(0, 0);
-				this.setRotation(0, 360);
-				this.setRotationInc(-5, 5);
-				this.setAlpha(1, 1);
-				this.setColor(C.white);
-				this.setLife(1000, 2000);
-				this.setShape(Shape.star);
-				this.setGravity(0, 0);
-				this.setOutline(Math.randbool());
-				break;
-			case 'puff':
-				this.setSpeed(3, 5);
-				this.setSpeedInc(-0.1, -0.1);
-				this.setSize(5, 10);
-				this.setSizeInc(-0.2, -0.2);
-				this.setDirection(0, 360);
-				this.setDirectionInc(0, 0);
-				this.setRotation(0, 0);
-				this.setRotationInc(0, 0);
-				this.setAlpha(1, 1);
-				this.setColor(C.white);
-				this.setLife(500, 800);
-				this.setShape(Shape.circle);
-				this.setGravity(0, 0);
-				this.setOutline(false);
-				break;
-			case 'bubble':
-				this.preset('puff');
-				this.setOutline(true);
-				break;
-			case 'box':
-				this.setSpeed(0, 0);
-				this.setSpeedInc(0, 0);
-				this.setSize(2, 4);
-				this.setSizeInc(0, 0);
-				this.setDirection(0, 0);
-				this.setDirectionInc(0, 0);
-				this.setRotation(0, 0);
-				this.setRotationInc(0, 0);
-				this.setAlpha(1, 1);
-				this.setColor(C.white);
-				this.setLife(300, 500);
-				this.setShape(Shape.square);
-				this.setGravity(0, 0);
-				this.setOutline(true);
-				break;
-			case 'strip':
-				this.setSpeed(0, 0);
-				this.setSpeedInc(0, 0);
-				this.setSize(4, 4);
-				this.setSizeInc(0, 0);
-				this.setDirection(0, 0);
-				this.setDirectionInc(0, 0);
-				this.setRotation(0, 0);
-				this.setRotationInc(0, 0);
-				this.setAlpha(0.15, 0.15);
-				this.setColor(C.black);
-				this.setLife(12000, 12000);
-				this.setShape(Shape.rect);
-				this.setGravity(0, 0);
-				this.setOutline(false);
-				break;
-		}
-	},
-	emit(n) {
-		for (let i = 0; i < n; i++) {
-			const n = new BranthParticle(
-				Math.range(this.x.min, this.x.max),
-				Math.range(this.y.min, this.y.max),
-				Math.range(this.spd.min, this.spd.max),
-				Math.range(this.spdinc.min, this.spdinc.max),
-				Math.range(this.size.min, this.size.max),
-				Math.range(this.sizeinc.min, this.sizeinc.max),
-				Math.range(this.d.min, this.d.max),
-				Math.range(this.dinc.min, this.dinc.max),
-				Math.range(this.r.min, this.r.max),
-				Math.range(this.rinc.min, this.rinc.max),
-				Math.range(this.a.min, this.a.max),
-				this.c,
-				Math.range(this.life.min, this.life.max),
-				this.shape,
-				Math.range(this.grav.min, this.grav.max),
-				this.outline
-			);
-			n.depth = this.depth;
-			OBJ.push(BranthParticle, n);
 		}
 	}
 };

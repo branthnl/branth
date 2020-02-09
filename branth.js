@@ -44,7 +44,7 @@ const CTX = CANVAS.getContext('2d');
 
 const GLOBAL = {
 	key: '_' + Math.random().toString(36).substr(2, 9),
-	debugMode: false,
+	debugMode: true,
 	interacted: false,
 	save(key, value) {
 		sessionStorage.setItem(key, value);
@@ -1538,6 +1538,11 @@ const BRANTH = {
 		}
 		document.head.appendChild(style);
 		document.body.appendChild(CANVAS);
+		if (GLOBAL.debugMode) {
+			if (Room.list.length === 0) {
+				console.log('No room found.');
+			}
+		}
 		this.update();
 	},
 	update(t) {

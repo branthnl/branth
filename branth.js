@@ -1113,7 +1113,7 @@ const Room = {
 		return this.names[this.id];
 	},
 	get current() {
-		return this.list[this.id];
+		return this.list[this.id] || new BranthRoom();
 	},
 	get previous() {
 		return this.list[this.pd];

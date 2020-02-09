@@ -1,190 +1,209 @@
-Math.dif = (a, b) => b - a;
-Math.dis = (a, b) => Math.abs(b - a);
-Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
-Math.range = (min, max, t) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
-Math.irange = (min, max) => Math.floor(Math.range(min, max));
-Math.degtorad = (d = 1) => d * Math.PI / 180;
-Math.radtodeg = (d = 1) => d * 180 / Math.PI;
-Math.lendirx = (l, d) => l * Math.cos(Math.degtorad(d));
-Math.lendiry = (l, d) => l * Math.sin(Math.degtorad(d));
-Math.lendir = (l, d) => ({ x: Math.lendirx(l, d), y: Math.lendiry(l, d) });
-Math.pointdis = (x1, y1, x2, y2) => {
-	if (x2 === undefined) {
-		x2 = y1.x;
-		y2 = y1.y;
-		y1 = x1.y;
-		x1 = x1.x;
-	}
-	return Math.hypot((x2 - x1), (y2 - y1));
-}
-Math.pointdir = (x1, y1, x2, y2) => 90 - Math.radtodeg(Math.atan2((x2 - x1), (y2 - y1)));
-Math.randneg = (t = 0.5) => Math.range(0, 1) > t? -1 : 1;
-Math.lerp = (from, to, t) => Math.range(from, to, t);
-Math.choose = (...args) => args[Math.irange(0, args.length)];
-
-class Vector {
+class Vector2 {
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
 	}
+	equal(v) {
+		return this.x === v.x && this.y === v.y;
+	}
+	static add(v1, v2) {
+		return new Vector2(v1.x + v2.x, v1.y + v2.y);
+	}
+	static subtract(v1, v2) {
+		return new Vector2(v1.x - v2.x, v1.y - v2.y);
+	}
+	static multiply(v1, v2) {
+		return new Vector2(v1.x * v2.x, v1.y * v2.y);
+	}
+	static divide(v1, v2) {
+		return new Vector2(v1.x / v2.x, v1.y / v2.y);
+	}
+	static dot(v1, v2) {
+		return v1.x * v2.x + v1.y * v2.y;
+	}
 }
 
-const PARENT = document.body;
+Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
+Math.range = (min, max, t) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
+Math.irange = (min, max) => Math.floor(Math.range(min, max));
+Math.choose = (...args) => args[Math.irange(0, args.length)];
+Math.randneg = (t = 0.5) => Math.random() > t? -1 : 1;
+Math.randbool = () => Math.random() > 0.5;
+Math.degtorad = (d) => d * Math.PI / 180;
+Math.radtodeg = (d) => d * 180 / Math.PI;
+Math.lendirx = (l, d) => l * Math.cos(Math.degtorad(d));
+Math.lendiry = (l, d) => l * Math.sin(Math.degtorad(d));
+Math.lendir = (l, d) => new Vector2(Math.lendirx(l, d), Math.lendiry(l, d));
+Math.linedis = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+Math.linedir = (x1, y1, x2, y2) => 90 - Math.radtodeg(Math.atan2(x2 - x1, y2 - y1));
+Math.pointdis = (p1, p2) => Math.linedis(p1.x, p1.y, p2.x, p2.y);
+Math.pointdir = (p1, p2) => Math.linedir(p1.x, p1.y, p2.x, p2.y);
+
 const CANVAS = document.createElement('canvas');
 const CTX = CANVAS.getContext('2d');
-const AUDIO_PARENT = CANVAS;
-const IMAGE_PARENT = CANVAS;
-const INPUT_KEY_PARENT = window;
-const INPUT_KEY_PREVENT_DEFAULT = true;
-const INPUT_MOUSE_PARENT = window;
-const INPUT_TOUCH_PARENT = window;
-const INPUT_TOUCH_PREVENT_DEFAULT = false;
-const DEFAULT_FONT = 'Fresca, sans-serif';
-const FRAME_RATE = 1000 / 60;
-const OBJ_DEPTH_RENDER = true;
-const DEBUG_MODE = true;
-if (!DEBUG_MODE) console.log = () => {};
 
-CANVAS.style.backgroundImage = `radial-gradient(white 33%, gainsboro, lightGray)`;
-
-const CanvasScaler = {
-	get w() {
-		const b = CANVAS.getBoundingClientRect();
-		return CANVAS.width / b.width;
+const GLOBAL = {
+	key: '_' + Math.random().toString(36).substr(2, 9),
+	debugMode: false,
+	interacted: false,
+	save(key, value) {
+		sessionStorage.setItem(key, value);
 	},
-	get h() {
-		const b = CANVAS.getBoundingClientRect();
-		return CANVAS.height / b.height;
+	load(key) {
+		return sessionStorage.getItem(key);
 	},
-	get auto() {
-		const b = CANVAS.getBoundingClientRect();
-		if (CANVAS.width > CANVAS.height) {
-			return CANVAS.width / b.width;
+	setup() {
+		const k = this.load('globalkey');
+		if (k) {
+			if (k.length >= 9) this.key = k;
+			return;
 		}
-		else {
-			return CANVAS.height / b.height;
-		}
+		this.save('globalkey', this.key);
 	}
 };
 
 const Time = {
+	FPS: 60,
 	time: 0,
 	lastTime: 0,
 	deltaTime: 0,
-	fixedDeltaTime: FRAME_RATE,
-	get scaledDeltaTime() {
-		return this.deltaTime / this.fixedDeltaTime;
+	fixedDeltaTime: 1000 / 60,
+	_fpsCount: 0,
+	get frameRate() {
+		return this.fixedDeltaTime / this.deltaTime;
 	},
 	update(t) {
 		this.lastTime = this.time || 0;
 		this.time = t || 0;
 		this.deltaTime = this.time - this.lastTime || this.fixedDeltaTime;
-		if (this.deltaTime > 1000) {
-			console.log(`Big delta time: ${this.deltaTime} / ${this.fixedDeltaTime}`);
+		if (this._fpsCount >= 60) {
+			this.FPS = Math.floor(this.frameRate * 60);
+			this._fpsCount -= 60;
 		}
+		else this._fpsCount += this.frameRate;
 	},
 	toSeconds(t) {
-		return Math.ceil((t || this.time) / 1000);
+		return Math.ceil(t / 1000);
 	},
 	toMinutes(t) {
-		return Math.ceil((t || this.time) / 60000);
+		return Math.ceil(t / 60000);
 	},
 	toClockSeconds(t) {
-		return Math.floor(t / 1000) % 60;
+		return Math.abs(Math.floor(t / 1000) % 60);
 	},
 	toClockMinutes(t) {
-		return Math.floor(t / 60000) % 60;
+		return Math.abs(Math.floor(t / 60000) % 60);
 	},
-	toClockSeconds0(t) {
-		let s = Math.abs(this.toClockSeconds(t));
+	toClockSecondsWithLeadingZero(t) {
+		let s = this.toClockSeconds(t);
 		return `${(s < 10? '0' : '')}${s}`;
 	},
-	toClockMinutes0(t) {
-		let m = Math.abs(this.toClockMinutes(t));
+	toClockMinutesWithLeadingZero(t) {
+		let m = this.toClockMinutes(t);
 		return `${(m < 10? '0' : '')}${m}`;
+	},
+	get s() {
+		return this.toSeconds(this.time);
+	},
+	get m() {
+		return this.toMinutes(this.time);
+	},
+	get ss() {
+		return this.toClockSecondsWithLeadingZero(this.time);
+	},
+	get mm() {
+		return this.toClockMinutesWithLeadingZero(this.time);
 	}
 };
 
-class BranthAudio {
-	constructor(paths) {
-		const a = document.createElement('audio');
-		for (const p of paths) {
-			const ext = p.split('.').pop();
-			const type = ext === 'ogg'? 'ogg' : (ext === 'mp3'? 'mpeg' : (ext === 'wav'? 'wav' : null));
-			if (type === null) {
-				console.log(`Audio file extension not supported: .${ext}`);
-				return;
-			}
-			const s = document.createElement('source');
-			s.src = p;
-			s.type = `audio/${type}`;
-			a.appendChild(s);
-		}
-		return a;
-	}
-}
-
-const Audio = {
+const Sound = {
 	list: [],
 	names: [],
+	supportedExt: ['ogg', 'mp3', 'wav'],
 	add(name, ...paths) {
+		const sources = [];
 		for (const p of paths) {
 			const ext = p.split('.').pop();
-			if (ext !== 'ogg' && ext != 'mp3' && ext != 'wav') {
-				console.log(`Audio file extension not supported: .${ext}`);
-				return;
+			if (this.supportedExt.includes(ext)) {
+				const type = ext === 'mp3'? 'mpeg' : ext;
+				sources.push(`<source src="${p}" type="audio/${type}">`);
+			}
+			else {
+				if (GLOBAL.debugMode) console.log(`Sound file extension not supported: .${ext}`);
 			}
 		}
-		const audio = new BranthAudio(paths);
-		AUDIO_PARENT.appendChild(audio);
-		this.list.push(audio);
-		this.names.push(name);
+		if (sources.length > 0) {
+			const a = new Audio();
+			a.innerHTML = sources.join('');
+			this.list.push(a);
+			this.names.push(name);
+		}
+	},
+	get(name) {
+		const s = this.list[this.names.indexOf(name)];
+		if (!s && GLOBAL.debugMode) {
+			console.log(`Sound not found: ${name}`);
+			return;
+		}
+		return s;
 	},
 	play(name) {
-		const a = this.list[this.names.indexOf(name)];
-		if (a) {
-			a.currentTime = 0;
-			a.play();
+		const s = this.get(name);
+		if (GLOBAL.interacted) {
+			if (s) {
+				s.currentTime = 0;
+				s.play();
+			}
 		}
+		else if (GLOBAL.debugMode) console.log(`Failed to play sound because the user didn't interact with the document first.`);
 	},
 	loop(name) {
-		const a = this.list[this.names.indexOf(name)];
-		if (a) {
-			a.loop = true;
-			a.currentTime = 0;
-			a.play();
+		const s = this.get(name);
+		if (GLOBAL.interacted) {
+			if (s) {
+				s.loop = true;
+				s.currentTime = 0;
+				s.play();
+			}
 		}
+		else if (GLOBAL.debugMode) console.log(`Failed to loop sound because the user didn't interact with the document first.`);
 	},
 	stop(name) {
-		const a = this.list[this.names.indexOf(name)];
-		if (a) {
-			a.pause();
-			a.currentTime = 0;
-			a.loop = false;
+		const s = this.get(name);
+		if (s) {
+			s.pause();
+			s.currentTime = 0;
+			s.loop = false;
 		}
 	},
 	isPlaying(name) {
-		const a = this.list[this.names.indexOf(name)];
-		if (a) {
-			return a.currentTime > 0 && !s.paused;
+		const s = this.get(name);
+		if (s) {
+			return s.currentTime > 0 && !s.paused;
 		}
 		return false;
 	},
 	setVolume(name, n) {
-		const a = this.list[this.names.indexOf(name)];
-		if (a) {
-			a.volume = Math.clamp(n, 0, 1);
-			if (n < 0 || n > 1) {
-				console.log(`Audio volume clamped to: ${a.volume}`);
-			}
+		const s = this.get(name);
+		if (s) {
+			s.volume = Math.clamp(n, 0, 1);
 		}
 	},
 	getVolume(name) {
-		const a = this.list[this.names.indexOf(name)];
-		if (a) {
-			return a.volume;
+		const s = this.get(name);
+		if (s) {
+			return s.volume;
 		}
-		console.log(`Audio not found: ${name}`);
+		return 0;
+	},
+	update() {
+		for (const s of this.list) {
+			if (s.loop) {
+				if (s.currentTime + Time.deltaTime * 0.005 >= s.duration) {
+					s.currentTime = 0;
+				}
+			}
+		}
 	}
 };
 
@@ -292,6 +311,12 @@ const KeyCode = {
 	Quote: 222
 };
 
+const Mouse = {
+	Left: 0,
+	Middle: 1,
+	Right: 2
+};
+
 class BranthKey {
 	constructor(keyCode) {
 		this.keyCode = keyCode;
@@ -313,36 +338,37 @@ class BranthKey {
 	}
 }
 
-const Mouse = {
-	Left: 0,
-	Middle: 1,
-	Right: 2
-};
-
 class BranthMouse extends BranthKey {
 	get button() {
 		return this.keyCode;
 	}
 }
 
-class BranthTouch extends BranthKey {
-	constructor(id) {
-		super(id);
-		this.position = {
-			x: 0,
-			y: 0
-		}
-	}
-	get id() {
-		return this.keyCode;
-	}
-}
-
 const Input = {
-	list: [[], [], []],
+	metaKeys: [
+		KeyCode.Alt,
+		KeyCode.Ctrl,
+		KeyCode.LeftWindowKey,
+		KeyCode.RightWindowKey
+	],
+	preventedKeys: [
+		KeyCode.Up,
+		KeyCode.Left,
+		KeyCode.Down,
+		KeyCode.Right,
+		KeyCode.Space
+	],
+	list: [[], []],
 	mouseMove: false,
-	add(keyCode) {
-		this.list[0].push(new BranthKey(keyCode));
+	mousePosition: new Vector2(0, 0),
+	setup() {
+		this.list = [[], []];
+		for (const k of Object.values(KeyCode)) {
+			this.list[0].push(new BranthKey(k));
+		}
+		for (const b of Object.values(Mouse)) {
+			this.list[1].push(new BranthMouse(b));
+		}
 	},
 	reset() {
 		for (const i of this.list) {
@@ -358,6 +384,8 @@ const Input = {
 				return k;
 			}
 		}
+		if (GLOBAL.debugMode) console.log(`No key found with key code: ${keyCode}`);
+		return new BranthKey(-1);
 	},
 	keyUp(keyCode) {
 		return this.getKey(keyCode).released;
@@ -367,30 +395,6 @@ const Input = {
 	},
 	keyHold(keyCode) {
 		return this.getKey(keyCode).hold;
-	},
-	eventkeyup(e) {
-		for (const k of this.list[0]) {
-			if (k.keyCode == e.which || k.keyCode == e.keyCode) {
-				k.up();
-			}
-		}
-	},
-	eventkeydown(e) {
-		for (const k of this.list[0]) {
-			if (k.keyCode == e.which || k.keyCode == e.keyCode) {
-				if (!k.hold) k.down();
-			}
-		}
-	},
-	screenToWorldPoint(p) {
-		return {
-			x: p.x * CanvasScaler.w,
-			y: p.y * CanvasScaler.h
-		}
-	},
-	mousePosition: {
-		x: 0,
-		y: 0
 	},
 	getMouse(button) {
 		return this.list[1][button];
@@ -404,132 +408,50 @@ const Input = {
 	mouseHold(button) {
 		return this.list[1][button].hold;
 	},
+	eventKeyUp(e) {
+		for (const k of this.list[0]) {
+			if (k.keyCode === e.which || k.keyCode === e.keyCode) {
+				k.up();
+			}
+		}
+	},
+	eventKeyDown(e) {
+		if (!GLOBAL.interacted) {
+			if (!this.metaKeys.includes(e.keyCode)) {
+				GLOBAL.interacted = true;
+			}
+		}
+		if (this.preventedKeys.includes(e.keyCode)) {
+			e.preventDefault();
+		}
+		for (const k of this.list[0]) {
+			if (k.keyCode === e.which || k.keyCode === e.keyCode) {
+				if (!k.hold) k.down();
+			}
+		}
+	},
 	updateMousePosition(e) {
 		const b = CANVAS.getBoundingClientRect();
 		this.mousePosition.x = e.clientX - b.x;
 		this.mousePosition.y = e.clientY - b.y;
 		this.mouseMove = true;
 	},
-	eventmouseup(e) {
+	eventMouseUp(e) {
 		this.updateMousePosition(e);
 		this.list[1][e.button].up();
 	},
-	eventmousemove(e) {
+	eventMouseMove(e) {
 		this.updateMousePosition(e);
 	},
-	eventmousedown(e) {
+	eventMouseDown(e) {
+		GLOBAL.interacted = true;
 		const m = this.list[1][e.button];
 		if (!m.hold) {
 			this.updateMousePosition(e);
 			m.down();
 		}
-	},
-	touches: [],
-	changedTouches: [],
-	get touchCount() {
-		return this.touches.length;
-	},
-	get changedTouchCount() {
-		return this.changedTouches.length;
-	},
-	getTouch(id) {
-		return this.list[2][id];
-	},
-	touchUp(id) {
-		return this.list[2][id].released;
-	},
-	touchDown(id) {
-		return this.list[2][id].pressed;
-	},
-	touchHold(id) {
-		return this.list[2][id].hold;
-	},
-	updateTouches(e) {
-		this.touches = [];
-		this.changedTouches = [];
-		for (let i = 0; i < e.touches.length; i++) {
-			const b = CANVAS.getBoundingClientRect();
-			const t = {
-				id: e.touches[i].identifier,
-				x: e.touches[i].clientX - b.x,
-				y: e.touches[i].clientY - b.y
-			}
-			this.touches.push(t);
-		}
-		for (let i = 0; i < e.changedTouches.length; i++) {
-			const b = CANVAS.getBoundingClientRect();
-			const t = {
-				id: e.changedTouches[i].identifier,
-				x: e.changedTouches[i].clientX - b.x,
-				y: e.changedTouches[i].clientY - b.y
-			}
-			this.changedTouches.push(t);
-		}
-	},
-	eventtouchend(e) {
-		for (let i = 0; i < e.changedTouches.length; i++) {
-			const b = CANVAS.getBoundingClientRect();
-			const t = {
-				id: e.changedTouches[i].identifier,
-				x: e.changedTouches[i].clientX - b.x,
-				y: e.changedTouches[i].clientY - b.y
-			}
-			this.list[2][t.id].position = { x: t.x, y: t.y };
-			this.list[2][t.id].up();
-		}
-		this.updateTouches(e);
-	},
-	eventtouchmove(e) {
-		for (let i = 0; i < e.changedTouches.length; i++) {
-			const b = CANVAS.getBoundingClientRect();
-			const t = {
-				id: e.changedTouches[i].identifier,
-				x: e.changedTouches[i].clientX - b.x,
-				y: e.changedTouches[i].clientY - b.y
-			}
-			this.list[2][t.id].position = { x: t.x, y: t.y };
-		}
-		this.updateTouches(e);
-	},
-	eventtouchstart(e) {
-		for (let i = 0; i < e.changedTouches.length; i++) {
-			const b = CANVAS.getBoundingClientRect();
-			const t = {
-				id: e.changedTouches[i].identifier,
-				x: e.changedTouches[i].clientX - b.x,
-				y: e.changedTouches[i].clientY - b.y
-			}
-			if(!this.list[2][t.id].hold) {
-				this.list[2][t.id].position = { x: t.x, y: t.y };
-				this.list[2][t.id].down();
-			}
-		}
-		this.updateTouches(e);
 	}
 };
-
-for (const keyCode of Object.values(KeyCode)) {
-	Input.add(keyCode);
-}
-
-Input.list[1] = [
-	new BranthMouse(Mouse.Left),
-	new BranthMouse(Mouse.Middle),
-	new BranthMouse(Mouse.Right)
-];
-
-Input.list[2] = [
-	new BranthTouch(0),
-	new BranthTouch(1),
-	new BranthTouch(2),
-	new BranthTouch(3),
-	new BranthTouch(4),
-	new BranthTouch(5),
-	new BranthTouch(6),
-	new BranthTouch(7),
-	new BranthTouch(8),
-	new BranthTouch(9)
-];
 
 const C = {
 	aliceBlue: '#f0f8ff',
@@ -679,42 +601,42 @@ const C = {
 	white: '#ffffff',
 	whiteSmoke: '#f5f5f5',
 	yellow: '#ffff00',
-	yellowGreen: '#9acd32'
+	yellowGreen: '#9acd32',
+	random() {
+		const c = Object.values(this); c.pop();
+		return c[Math.floor(Math.random() * c.length)];
+	}
 };
 
 const Font = {
+	normal: '',
+	bold: 'bold',
+	italic: 'italic',
+	bolditalic: 'bold italic',
+	size: 10,
+	style: '',
+	get font() {
+		return `${this.style} ${this.size}px`;
+	},
 	get s() {
-		return `${16}px`;
+		this.size = 10;
+		return this.font;
 	},
 	get m() {
-		return `${24}px`;
+		this.size = 16;
+		return this.font;
 	},
 	get l() {
-		return `${36}px`;
+		this.size = 24;
+		return this.font;
 	},
 	get xl() {
-		return `${52}px`;
+		this.size = 36;
+		return this.font;
 	},
 	get xxl() {
-		return `${80}px`;
-	},
-	get sb() {
-		return `bold ${16}px`;
-	},
-	get mb() {
-		return `bold ${24}px`;
-	},
-	get lb() {
-		return `bold ${36}px`;
-	},
-	get xlb() {
-		return `bold ${52}px`;
-	},
-	get xxlb() {
-		return `bold ${80}px`;
-	},
-	get size() {
-		return +CTX.font.split(' ').filter(x => x.includes('px'))[0].split('px').shift();
+		this.size = 48;
+		return this.font;
 	}
 };
 
@@ -732,151 +654,67 @@ const Cap = {
 	round: 'round'
 };
 
-const Poly = {
-	fill: 'name: fill, quantity: 0, closePath: true, outline: false',
-	stroke: 'name: stroke, quantity: 0, closePath: true, outline: true',
-	lineList: 'name: lineList, quantity: 2, closePath: false, outline: true',
-	pointList: 'name: pointList, quantity: 1, closePath: false, outline: true',
-	triangleList: 'name: triangleList, quantity: 3, closePath: true, outline: true',
-	triangleListFill: 'name: triangleList, quantity: 3, closePath: false, outline: false'
+const Line = {
+	miter: 'miter',
+	round: 'round',
+	bevel: 'bevel'
 };
 
-class BranthImage {
-	constructor(path) {
-		const img = document.createElement('img');
-		img.src = path;
-		img.style.display = 'none';
-		return img;
-	}
-}
+const Primitive = {
+	fill: { name: 'Fill', quantity: 0, closePath: true, outline: false },
+	line: { name: 'Line', quantity: 0, closePath: false, outline: true },
+	stroke: { name: 'Stroke', quantity: 0, closePath: true, outline: true },
+	lineList: { name: 'Line List', quantity: 2, closePath: false, outline: true },
+	pointList: { name: 'Point List', quantity: 1, closePath: false, outline: true },
+	triangleList: { name: 'Triangle List', quantity: 3, closePath: true, outline: true },
+	triangleListFill: { name: 'Triangle List Fill', quantity: 3, closePath: false, outline: false }
+};
 
 const Draw = {
-	list: [[], []],
-	names: [[], []],
-	hasName(name) {
-		for (const n of this.names) {
-			if (n.includes(name)) {
-				return true;
-			}
-		}
-		return false;
+	fontFamily: '',
+	fontDefault: ['Arvo', 'Fresca', 'Sniglet'],
+	primitiveType: '',
+	vertices: [],
+	setFont(s, style = Font.normal) {
+		CTX.font = `${style? `${style} ` : ''}${s} ${this.fontFamily? `${this.fontFamily}, `: ''}${this.fontDefault.join(',')}, serif`;
 	},
-	add(name, ...args) {
-		if (args.length === 1) {
-			this.addImage(name, args[0]);
-		}
-		else {
-			this.addSprite(name, args);
-		}
+	setFontStyle(s) {
+		Font.style = s;
 	},
-	addImage(name, path) {
-		const img = new BranthImage(path);
-		IMAGE_PARENT.appendChild(img);
-		this.list[0].push(img);
-		this.names[0].push(name);
+	resetFontStyle() {
+		Font.style = Font.normal;
 	},
-	addSprite(name, args) {
-		const img = new BranthImage(args[0]);
-		IMAGE_PARENT.appendChild(img);
-		const s = {
-			img: img,
-			amount: args[1],
-			column: args[2],
-			w: args[3],
-			h: args[4],
-			hCellOffset: args[5] || 0,
-			vCellOffset: args[6] || 0,
-			hPixelOffset: args[7] || 0,
-			vPixelOffset: args[8] || 0,
-			hGap: args[9] || 0,
-			vGap: args[10] || 0
-		}
-		this.list[1].push(s);
-		this.names[1].push(name);
+	setFontFamily(s) {
+		this.fontFamily = s;
 	},
-	getImage(name) {
-		return this.list[0][this.names[0].indexOf(name)];
+	resetFontFamily() {
+		this.fontFamily = '';
 	},
-	getSprite(name) {
-		return this.list[1][this.names[1].indexOf(name)];
+	setAlpha(n) {
+		CTX.globalAlpha = n;
 	},
-	origin(x, y) {
-		return new Vector(x, y);
+	setColor(c) {
+		CTX.fillStyle = c;
+		CTX.strokeStyle = c;
 	},
-	image(name, x, y, center) {
-		const img = this.list[0][this.names[0].indexOf(name)];
-		if (img) {
-			let dx = x - (center? img.width * 0.5 : 0);
-			let dy = y - (center? img.height * 0.5 : 0);
-			if (center instanceof Vector) {
-				dx = x - center.x;
-				dy = y - center.y;
-			}
-			CTX.drawImage(img, dx, dy);
-		}
-		else throw new Error(`Image not found: ${name}`);
-	},
-	sprite(name, i, x, y, center) {
-		const s = this.list[1][this.names[1].indexOf(name)];
-		if (s) {
-			const sx = s.hPixelOffset + s.hCellOffset * s.w + (s.w + s.hGap) * (Math.floor(i) % s.column);
-			const sy = s.vPixelOffset + s.vCellOffset * s.h + (s.h + s.vGap) * Math.floor(i / s.amount);
-			const sWidth = s.w;
-			const sHeight = s.h;
-			let dx = x - (center? s.w * 0.5 : 0);
-			let dy = y - (center? s.h * 0.5 : 0);
-			if (center instanceof Vector) {
-				dx = x - center.x;
-				dy = y - center.y;
-			}
-			const dWidth = s.w;
-			const dHeight = s.h;
-			CTX.drawImage(s.img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-		}
-		else throw new Error(`Sprite not found: ${name}`);
-	},
-	imageTransformed(name, x, y, r, center) {
-		CTX.save();
-		CTX.translate(x, y);
-		CTX.rotate(Math.degtorad(r));
-		this.image(name, 0, 0, center);
-		CTX.restore();
-	},
-	spriteTransformed(name, i, x, y, r, center) {
-		CTX.save();
-		CTX.translate(x, y);
-		CTX.rotate(Math.degtorad(r));
-		this.sprite(name, i, 0, 0, center);
-		CTX.restore();
-	},
-	setAlpha(a) {
-		CTX.globalAlpha = a;
-	},
-	setColor(color) {
-		CTX.fillStyle = color;
-		CTX.strokeStyle = color;
-	},
-	setHAlign(align) {
-		CTX.textAlign = align;
-	},
-	setVAlign(align) {
-		CTX.textBaseline = align;
-	},
-	setHVAlign(h, v) {
-		CTX.textAlign = h;
-		CTX.textBaseline = v || h;
-	},
-	setFont(font) {
-		CTX.font = `${font} ${DEFAULT_FONT}`;
-	},
-	setShadow(x, y, b, c) {
-		CTX.shadowBlur = b || 0;
-		CTX.shadowColor = c || C.black;
+	setShadow(x, y, b = 0, c = C.black) {
+		CTX.shadowBlur = b;
+		CTX.shadowColor = c;
 		CTX.shadowOffsetX = x;
 		CTX.shadowOffsetY = y;
 	},
 	resetShadow() {
-		this.setShadow(0, 0, 0, C.black);
+		this.setShadow(0, 0);
+	},
+	setHAlign(a) {
+		CTX.textAlign = a;
+	},
+	setVAlign(a) {
+		CTX.textBaseline = a;
+	},
+	setHVAlign(h, v) {
+		CTX.textAlign = h;
+		CTX.textBaseline = v;
 	},
 	text(x, y, text) {
 		CTX.fillText(text, x, y);
@@ -887,44 +725,55 @@ const Draw = {
 	textHeight(text) {
 		return Font.size;
 	},
-	draw(outline, cap) {
-		if (outline) {
-			if (cap) CTX.lineCap = cap;
-			CTX.stroke();
-			this.resetCap();
-		}
-		else {
-			CTX.fill();
-		}
+	draw(outline = false) {
+		if (outline) CTX.stroke();
+		else CTX.fill();
 	},
-	line(x1, y1, x2, y2, cap) {
+	setLineCap(cap) {
+		CTX.lineCap = cap;
+	},
+	resetLineCap() {
+		CTX.lineCap = Cap.butt;
+	},
+	setLineJoin(line) {
+		CTX.lineJoin = line;
+	},
+	resetLineJoin() {
+		CTX.lineJoin = Line.miter;
+	},
+	setStrokeWeight(n) {
+		CTX.lineWidth = n;
+	},
+	resetStrokeWeight() {
+		CTX.lineWidth = 1;
+	},
+	line(x1, y1, x2, y2) {
 		CTX.beginPath();
 		CTX.moveTo(x1, y1);
 		CTX.lineTo(x2, y2);
-		this.draw(true, cap);
+		CTX.stroke();
 	},
-	rect(x, y, w, h, outline) {
+	plus(x, y, r) {
+		CTX.beginPath();
+		CTX.moveTo(x, y - r);
+		CTX.lineTo(x, y + r);
+		CTX.moveTo(x - r, y);
+		CTX.lineTo(x + r, y);
+		CTX.stroke();
+	},
+	rect(x, y, w, h, outline = false) {
 		CTX.beginPath();
 		CTX.rect(x, y, w, h);
 		this.draw(outline);
 	},
-	circle(x, y, r, outline) {
+	circle(x, y, r, outline = false) {
 		CTX.beginPath();
-		CTX.arc(x, y, r, 0, 2 * Math.PI);
-		CTX.closePath();
+		CTX.arc(x, y, Math.abs(r), 0, 2 * Math.PI);
 		this.draw(outline);
 	},
-	ellipse(x, y, w, h, outline) {
-		CTX.beginPath();
-		CTX.moveTo(x, y + h * 0.5);
-		CTX.quadraticCurveTo(x, y, x + w * 0.5, y);
-		CTX.quadraticCurveTo(x + w, y, x + w, y + h * 0.5);
-		CTX.quadraticCurveTo(x + w, y + h, x + w * 0.5, y + h);
-		CTX.quadraticCurveTo(x, y + h, x, y + h * 0.5);
-		CTX.closePath();
-		this.draw(outline);
-	},
-	roundRect(x, y, w, h, r, outline) {
+	roundRect(x, y, w, h, r, outline = false) {
+		if (w < 0) { x += w; w = -w; }
+		if (h < 0) { y += h; h = -h; }
 		r = Math.clamp(r, 0, Math.min(w * 0.5, h * 0.5)) || 0;
 		CTX.beginPath();
 		CTX.moveTo(x, y + r);
@@ -938,169 +787,134 @@ const Draw = {
 		CTX.closePath();
 		this.draw(outline);
 	},
-	roundrect(x, y, w, h, r, outline) {
-		this.roundRect(x, y, w, h, r, outline);
+	pointLine(p1, p2) {
+		this.line(p1.x, p1.y, p2.x, p2.y);
 	},
-	polyType: '',
-	vertices: [],
-	polyBegin(polyType = Poly.fill) {
-		this.polyType = polyType;
+	pointRect(p1, p2, p3, p4, outline = false) {
+		CTX.beginPath();
+		CTX.moveTo(p1.x, p1.y);
+		CTX.lineTo(p2.x, p2.y);
+		CTX.lineTo(p3.x, p3.y);
+		CTX.lineTo(p4.x, p4.y);
+		CTX.closePath();
+		this.draw(outline);
+	},
+	primitiveBegin() {
 		this.vertices = [];
 	},
 	vertex(x, y) {
-		this.vertices.push({ x, y });
+		this.vertices.push(new Vector2(x, y));
 	},
-	polyEnd(polyType) {
-		if (polyType) this.polyType = polyType;
-		const get = (p, s) => p.filter(x => x.includes(s))[0][1];
-		const split = (s) => s.replace(/\s/g, '').split(',').map(x => x.split(':'));
-		const getName = (s) => get(split(s), 'name');
-		const param = split(this.polyType);
-		const name = get(param, 'name');
-		const outline = get(param, 'outline') === 'true';
-		const quantity = +get(param, 'quantity');
-		const closePath = get(param, 'closePath') === 'true';
-		let count = 0;
+	primitiveEnd(primitiveType) {
+		this.primitiveType = primitiveType || Primitive.fill;
+		const [q, c, o] = [this.primitiveType.quantity, this.primitiveType.closePath, this.primitiveType.outline];
+		if (q === 1) this.setLineCap(Cap.round);
 		CTX.beginPath();
-		for (const v of this.vertices) {
-			if (quantity === 1) {
-				this.draw(outline, Cap.round);
+		for (let i = 0; i < this.vertices.length; i++) {
+			const v = this.vertices[i];
+			if (q === 1) {
+				this.draw(o);
 				CTX.beginPath();
 				CTX.moveTo(v.x, v.y);
 				CTX.lineTo(v.x, v.y);
 			}
-			else if (count === 0 || (quantity > 1 && count % quantity === 0)) {
-				if (closePath) CTX.closePath();
-				this.draw(outline);
+			else if (i === 0 || (q > 1 && i % q === 0)) {
+				if (c) CTX.closePath();
+				this.draw(o);
 				CTX.beginPath();
 				CTX.moveTo(v.x, v.y);
 			}
 			else CTX.lineTo(v.x, v.y);
-			count++;
 		}
-		if (closePath) CTX.closePath();
-		if (quantity === 1) {
-			this.draw(outline, Cap.round);
-		}
-		else this.draw(outline);
+		if (c) CTX.closePath();
+		this.draw(o);
+		this.resetLineCap();
 	},
-	rectTransformed(x, y, w, h, d, outline) {
-		const r = Math.hypot(w * 0.5, h * 0.5);
-		const p = [
-			Math.lendir(r, d + 225),
-			Math.lendir(r, d + 315),
-			Math.lendir(r, d + 45),
-			Math.lendir(r, d + 135)
-		];
-		this.polyBegin(outline? Poly.stroke : Poly.fill);
-		this.vertex(x + p[0].x, y + p[0].y);
-		this.vertex(x + p[1].x, y + p[1].y);
-		this.vertex(x + p[2].x, y + p[2].y);
-		this.vertex(x + p[3].x, y + p[3].y);
-		this.polyEnd();
-	},
-	starTransformed(x, y, r, d, outline) {
-		const lp = [
-			Math.lendir(r, d + 270),
-			Math.lendir(r, d + 342),
-			Math.lendir(r, d + 54),
-			Math.lendir(r, d + 126),
-			Math.lendir(r, d + 198)
-		];
-		const sr = r * 0.5;
-		const sp = [
-			Math.lendir(sr, d + 306),
-			Math.lendir(sr, d + 18),
-			Math.lendir(sr, d + 90),
-			Math.lendir(sr, d + 162),
-			Math.lendir(sr, d + 234)
-		];
-		this.polyBegin(outline? Poly.stroke : Poly.fill);
-		this.vertex(x + lp[0].x, y + lp[0].y);
-		this.vertex(x + sp[0].x, y + sp[0].y);
-		this.vertex(x + lp[1].x, y + lp[1].y);
-		this.vertex(x + sp[1].x, y + sp[1].y);
-		this.vertex(x + lp[2].x, y + lp[2].y);
-		this.vertex(x + sp[2].x, y + sp[2].y);
-		this.vertex(x + lp[3].x, y + lp[3].y);
-		this.vertex(x + sp[3].x, y + sp[3].y);
-		this.vertex(x + lp[4].x, y + lp[4].y);
-		this.vertex(x + sp[4].x, y + sp[4].y);
-		this.polyEnd();
-	},
-	star(x, y, r, outline) {
-		this.starTransformed(x, y, r, 0, outline);
-	},
-	setCap(cap) {
-		CTX.lineCap = cap;
-	},
-	resetCap() {
-		CTX.lineCap = Cap.butt;
-	},
-	setLineWidth(n) {
-		CTX.lineWidth = n;
-	},
-	resetLineWidth() {
-		CTX.lineWidth = 1;
-	},
-	beginPath() {
+	ellipseRotated(x, y, w, h, angle, outline = false) {
 		CTX.beginPath();
-	},
-	closePath() {
+		CTX.ellipse(x, y, Math.abs(w), Math.abs(h), angle, 0, 2 * Math.PI);
 		CTX.closePath();
+		this.draw(outline);
 	},
-	moveTo(x, y) {
-		if (y) {
-			CTX.moveTo(x, y);
+	ellipse(x, y, w, h, outline = false) {
+		this.ellipseRotated(x, y, w, h, 0, outline);
+	},
+	starExtRotated(x, y, pts, inner, outer, angle, outline = false) {
+		CTX.beginPath();
+		for (let i = 0; i <= 2 * pts; i++) {
+			const [r, a] = [(i % 2 === 0)? inner : outer, Math.PI * i / pts - Math.degtorad(angle)];
+			const p = new Vector2(x + r * Math.sin(a), y + r * Math.cos(a));
+			if (i === 0) CTX.moveTo(p.x, p.y);
+			else CTX.lineTo(p.x, p.y);
 		}
-		else {
-			CTX.moveTo(x.x, x.y);
-		}
+		CTX.closePath();
+		this.draw(outline);
 	},
-	lineTo(x, y) {
-		if (y) {
-			CTX.lineTo(x, y);
-		}
-		else {
-			CTX.lineTo(x.x, x.y);
-		}
+	starRotated(x, y, r, angle, outline = false) {
+		this.starExtRotated(x, y, 5, r * 0.5, r, angle, outline);
 	},
-	curveTo(cpx, cpy, x, y) {
-		CTX.quadraticCurveTo(cpx, cpy, x, y);
+	starExt(x, y, pts, inner, outer, outline = false) {
+		this.starExtRotated(x, y, pts, inner, outer, 0, outline);
 	},
-	bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y) {
-		if (cp2y) {
-			CTX.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
-		}
-		else {
-			CTX.bezierCurveTo(cp1x.x, cp1x.y, cp1y.x, cp1y.y, cp2x.x, cp2x.y);
-		}
+	star(x, y, r, outline = false) {
+		this.starRotated(x, y, r, 0, outline);
 	},
-	fill() {
-		CTX.fill();
-	},
-	stroke() {
-		CTX.stroke();
-	},
-	save() {
+	transform(x, y, xscale, yscale, angle, e) {
 		CTX.save();
-	},
-	scale(x, y) {
-		CTX.scale(x, y || x);
-	},
-	rotate(d) {
-		CTX.rotate(Math.degtorad(d));
-	},
-	translate(x, y) {
 		CTX.translate(x, y);
-	},
-	restore() {
+		CTX.rotate(Math.degtorad(angle));
+		CTX.scale(xscale, yscale);
+		e();
 		CTX.restore();
 	},
-	clearRect(x, y, w, h) {
-		CTX.clearRect(x, y, w, h);
+	textTransformed(x, y, text, xscale, yscale, angle) {
+		this.transform(x, y, xscale, yscale, angle, () => this.text(0, 0, text));
+	},
+	rectTransformed(x, y, w, h, outline, xscale, yscale, angle, origin = new Vector2(0.5, 0.5)) {
+		this.transform(x, y, xscale, yscale, angle, () => this.rect(-w * origin.x, -h * origin.y, w, h, outline));
+	},
+	starTransformed(x, y, r, outline, xscale, yscale, angle) {
+		this.transform(x, y, xscale, yscale, angle, () => this.star(0, 0, r, outline));
+	},
+	starExtTransformed(x, y, pts, inner, outer, outline, xscale, yscale, angle) {
+		this.transform(x, y, xscale, yscale, angle, () => this.starExt(0, 0, pts, inner, outer, outline));
+	},
+	roundRectTransformed(x, y, w, h, r, outline, xscale, yscale, angle, origin = new Vector2(0.5, 0.5)) {
+		this.transform(x, y, xscale, yscale, angle, () => this.roundRect(-w * origin.x, -h * origin.y, w, h, r, outline));
+	},
+	textRotated(x, y, text, angle) {
+		this.textTransformed(x, y, text, 1, 1, angle);
+	},
+	rectRotated(x, y, w, h, angle, outline = false, origin = new Vector2(0.5, 0.5)) {
+		this.rectTransformed(x, y, w, h, outline, 1, 1, angle, origin);
+	},
+	roundRectRotated(x, y, w, h, r, angle, outline = false, origin = new Vector2(0.5, 0.5)) {
+		this.roundRectTransformed(x, y, w, h, r, outline, 1, 1, angle, origin);
 	}
 };
+
+class Rect {
+	constructor(x, y, w, h) {
+		this.x = x;
+		this.y = y;
+		this.w = w;
+		this.h = h;
+	}
+	draw(outline = false) {
+		Draw.rect(this.x, this.y, this.w, this.h, outline);
+	}
+}
+
+class Circle {
+	constructor(x, y, r) {
+		this.x = x;
+		this.y = y;
+		this.r = r;
+	}
+	draw(outline = false) {
+		Draw.circle(this.x, this.y, this.r, outline);
+	}
+}
 
 const OBJ = {
 	ID: 0,
@@ -1124,11 +938,19 @@ const OBJ = {
 	take(cls) {
 		return this.list[this.classes.indexOf(cls)];
 	},
-	push(cls, i) {
+	push(cls, i, dontStart) {
 		if (this.classes.includes(cls)) {
 			this.list[this.classes.indexOf(cls)].push(i);
+			if (!dontStart) {
+				i.awake();
+				if (i.active) {
+					i.start();
+					i.lateStart();
+				}
+			}
+			return i;
 		}
-		else console.log(`Class not found: ${cls.name}\n- Try add OBJ.add(${cls.name}); in your code.`);
+		if (GLOBAL.debugMode) console.log(`Class not found: ${cls.name}`);
 	},
 	create(cls, x = 0, y = 0) {
 		if (this.classes.includes(cls)) {
@@ -1141,7 +963,7 @@ const OBJ = {
 			}
 			return i;
 		}
-		console.log(`Class not found: ${cls.name}\n- Try add OBJ.add(${cls.name}); in your code.`);
+		if (GLOBAL.debugMode) console.log(`Class not found: ${cls.name}`);
 	},
 	destroy(id) {
 		for (const o of this.list) {
@@ -1159,18 +981,16 @@ const OBJ = {
 		for (const i in this.list) {
 			this.list[i] = [];
 		}
-	},
-	distance(a, b) {
-		return Math.hypot(b.x - a.x, b.y - a.y);
+		this.ID = 0;
 	},
 	nearest(cls, x, y) {
-		let n = -1;
-		let nv = Infinity;
-		for (const i of this.list[this.classes.indexOf(cls)]) {
-			const v = this.distance({x, y}, i);
-			if (v < nv) {
+		let n = null;
+		let dis = Infinity;
+		for (const i of this.take(cls)) {
+			const d = Math.pointdis(new Vector2(x, y), i);
+			if (d < dis) {
 				n = i;
-				nv = v;
+				dis = d;
 			}
 		}
 		return n;
@@ -1189,32 +1009,19 @@ const OBJ = {
 		}
 	},
 	render() {
-		if (OBJ_DEPTH_RENDER) {
-			const so = [];
-			for (const o of this.list) {
-				for (const i of o) {
-					if (i) {
-						if (i.visible) {
-							so.push(i);
-						}
+		const so = [];
+		for (const o of this.list) {
+			for (const i of o) {
+				if (i) {
+					if (i.visible) {
+						so.push(i);
 					}
 				}
-			}
-			so.sort((a, b) => (a.depth > b.depth)? -1 : 1);
-			for (const i of so) {
-				i.render();
 			}
 		}
-		else {
-			for (const o of this.list) {
-				for (const i of o) {
-					if (i) {
-						if (i.visible) {
-							i.render();
-						}
-					}
-				}
-			}
+		so.sort((a, b) => (a.depth > b.depth)? -1 : 1);
+		for (const i of so) {
+			i.render();
 		}
 	}
 };
@@ -1225,10 +1032,10 @@ class BranthObject {
 		this.depth = 0;
 		this.active = true;
 		this.visible = true;
+		this.xstart = x;
+		this.ystart = y;
 		this.x = x;
 		this.y = y;
-		this.xs = x;
-		this.ys = y;
 	}
 	awake() {}
 	start() {}
@@ -1258,7 +1065,7 @@ class BranthBehaviour extends BranthObject {
 					if (this.alarm[i] > 0) {
 						this.alarm[i] = Math.max(0, this.alarm[i] - Time.deltaTime);
 					}
-					else if (this.alarm[i] != -1) {
+					else if (this.alarm[i] !== -1) {
 						switch (i) {
 							case 0: this.alarm0(); break;
 							case 1: this.alarm1(); break;
@@ -1278,142 +1085,135 @@ class BranthBehaviour extends BranthObject {
 	}
 }
 
-const Mask = {
-	rect: 'rect',
-	circle: 'circle'
-};
-
-class BranthMask {
-	constructor(...args) {
-		this.name = args[0];
-		this.x = args[1];
-		this.y = args[2];
-		this.xs = this.x;
-		this.ys = this.y;
-		this.w = 0;
-		this.h = 0;
-		this.r = 0;
-		if (this.name === Mask.rect) {
-			this.w = args[3];
-			this.h = args[4];
-		}
-		else if (this.name === Mask.circle) {
-			this.r = args[3];
-		}
+class BranthRoom {
+	constructor(name) {
+		this.name = name;
 	}
-	hover(x, y) {
-		let p = { x, y };
-		if (y === undefined) {
-			p = {
-				x: x.x,
-				y: x.y
-			};
-		}
-		if (this.name === Mask.rect) {
-			return p.x >= this.x && p.x <= this.x + this.w && p.y >= this.y && p.y <= this.y + this.h;
-		}
-		else if (this.name === Mask.circle) {
-			return Math.pointdis(p.x, p.y, this.x, this.y) <= this.r;
-		}
-		return false;
-	}
+	start() {}
+	update() {}
+	render() {}
+	renderUI() {}
 }
 
-class BranthGameObject extends BranthBehaviour {
-	constructor(x, y) {
-		super(x, y);
-		this.xp = x;
-		this.yp = y;
-		this.spriteName = '';
-		this.spriteIndex = 0;
-		this.spriteAngle = 0;
-		this.spriteCenter = true;
-		this.mask = [];
-		this.drawMask = false;
-		this.drawMaskAlpha = 1;
-		this.drawMaskColor = C.magenta;
-	}
-	addMask(...args) {
-		if (args[0] === Mask.rect) {
-			const n = new BranthMask(args[0], args[1], args[2], args[3], args[4]);
-			this.mask.push(n);
-		}
-		else if (args[0] === Mask.circle) {
-			const n = new BranthMask(args[0], args[1], args[2], args[3]);
-			this.mask.push(n);
-		}
-	}
-	hover(x, y) {
-		if (y === undefined) {
-			for (const m of this.mask) {
-				if (m.hover(x)) {
-					return true;
-				}
-			}
-		}
-		else {
-			for (const m of this.mask) {
-				if (m.hover(x, y)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	maskUpdate() {
-		for (const i in this.mask) {
-			const m = this.mask[i];
-			m.x = this.x + m.xs;
-			m.y = this.y + m.ys;
-		}
-	}
-	earlyUpdate() {
-		this.xp = this.x;
-		this.yp = this.y;
-	}
-	lateUpdate() {
-		this.maskUpdate();
-		this.alarmUpdate();
-	}
-	drawSelf() {
-		if (Draw.hasName(this.spriteName)) {
-			if (Draw.getSprite(this.spriteName)) {
-				Draw.spriteTransformed(this.spriteName, this.spriteIndex % Draw.getSprite(this.spriteName).amount, this.x, this.y, this.spriteAngle, this.spriteCenter);
-			}
-			else {
-				Draw.imageTransformed(this.spriteName, this.x, this.y, this.spriteAngle, this.spriteCenter);
-			}
-		}
-	}
-	drawMasks() {
-		Draw.setAlpha(this.drawMaskAlpha);
-		Draw.setColor(this.drawMaskColor);
-		for (const m of this.mask) {
-			if (m.name === Mask.rect) {
-				Draw.rect(m.x, m.y, m.w, m.h);
-			}
-			else if (m.name === Mask.circle) {
-				Draw.circle(m.x, m.y, m.r);
-			}
-		}
-		Draw.setAlpha(1);
-	}
+const Room = {
+	scale: 2,
+	w: 300,
+	h: 150,
+	id: 0,
+	pd: 0,
+	list: [],
+	names: [],
+	get mid() {
+		return {
+			w: this.w * 0.5,
+			h: this.h * 0.5
+		};
+	},
+	get name() {
+		return this.names[this.id];
+	},
+	get current() {
+		return this.list[this.id];
+	},
+	get previous() {
+		return this.list[this.pd];
+	},
+	add(room) {
+		this.list.push(room);
+		this.names.push(room.name);
+	},
+	start(name) {
+		this.pd = this.id;
+		this.id = this.names.indexOf(name);
+		OBJ.clearAll();
+		Input.reset();
+		this.resize();
+		this.current.start();
+	},
+	update() {
+		this.current.update();
+	},
 	render() {
-		this.drawSelf();
-		if (this.drawMask) {
-			this.drawMasks();
+		this.current.render();
+	},
+	resize() {
+		const [b, s] = [CANVAS.getBoundingClientRect(), this.scale];
+		this.w = b.width;
+		this.h = b.height;
+		CANVAS.width = this.w * s;
+		CANVAS.height = this.h * s;
+		CTX.resetTransform();
+		CTX.scale(s, s);
+	}
+};
+
+const View = {
+	_x: 0,
+	_y: 0,
+	xshake: 0,
+	yshake: 0,
+	int: 0,
+	mag: 0,
+	alarm: -1,
+	get x() {
+		return this._x + this.xshake;
+	},
+	get y() {
+		return this._y + this.yshake;
+	},
+	set x(val) {
+		this._x = val;
+	},
+	set y(val) {
+		this._y = val;
+	},
+	target(x, y) {
+		this._x = x;
+		this._y = y;
+	},
+	follow(i) {
+		this.target(i.x - Room.mid.w, i.y - Room.mid.h);
+	},
+	shake(mag, int) {
+		this.mag = mag;
+		this.int = int;
+		this.alarm = this.int;
+	},
+	convert(v) {
+		return Vector2.subtract(v, new Vector2(-this._x, -this._y));
+	},
+	update() {
+		if (this.alarm > 0) {
+			const mag = this.mag * this.alarm / this.int;
+			this.xshake = mag * (Math.random() > 0.5? -1 : 1);
+			this.yshake = mag * (Math.random() > 0.5? -1 : 1);
+			this.alarm -= Time.deltaTime;
+			if (this.alarm <= 0) {
+				this.xshake = 0;
+				this.yshake = 0;
+			}
 		}
+	}
+};
+
+class BranthGameObject extends BranthBehaviour {
+	get vx() {
+		return this.x - View.x;
+	}
+	get vy() {
+		return this.y - View.y;
 	}
 }
 
 const Shape = {
-	rect: 'rect',
-	star: 'star',
-	circle: 'circle'
+	rect: 'Rect',
+	star: 'Star',
+	circle: 'Circle',
+	square: 'Square'
 };
 
-class BranthParticle extends BranthObject {
-	constructor(x, y, spd, spdinc, size, sizeinc, d, dinc, r, rinc, a, c, life, shape, grav) {
+class BranthParticle extends BranthGameObject {
+	constructor(x, y, spd, spdinc, size, sizeinc, d, dinc, r, rinc, a, c, life, shape, grav, outline) {
 		super(x, y);
 		this.spd = spd;
 		this.spdinc = spdinc;
@@ -1428,7 +1228,9 @@ class BranthParticle extends BranthObject {
 		this.life = life;
 		this.shape = shape;
 		this.grav = grav;
+		this.outline = outline;
 		this.g = grav;
+		this.pts = Math.choose(4, 5);
 	}
 	update() {
 		this.a = Math.max(0, this.a - Time.deltaTime / this.life);
@@ -1447,16 +1249,10 @@ class BranthParticle extends BranthObject {
 		Draw.setAlpha(this.a);
 		Draw.setColor(this.c);
 		switch (this.shape) {
-			case Shape.rect:
-				Draw.rectTransformed(this.x, this.y, this.size, this.size, this.r);
-				break;
-			case Shape.star:
-				Draw.starTransformed(this.x, this.y, this.size, this.r);
-				break;
-			case Shape.circle:
-				Draw.circle(this.x, this.y, this.size);
-				break;
-			default: break;
+			case Shape.rect: Draw.rectRotated(this.vx, this.vy, this.size * 2, this.size, this.r, this.outline); break;
+			case Shape.star: Draw.starExtRotated(this.vx, this.vy, this.pts, this.size * 0.5, this.size, this.r, this.outline); break;
+			case Shape.circle: Draw.circle(this.vx, this.vy, this.size, this.outline); break;
+			case Shape.square: Draw.rectRotated(this.vx, this.vy, this.size * 2, this.size * 2, this.r, this.outline); break;
 		}
 		Draw.setAlpha(1);
 	}
@@ -1510,7 +1306,7 @@ const Emitter = {
 		min: 1,
 		max: 1
 	},
-	c: C.yellow,
+	c: C.white,
 	life: {
 		min: 3000,
 		max: 4000
@@ -1520,6 +1316,7 @@ const Emitter = {
 		min: 0.01,
 		max: 0.01
 	},
+	outline: false,
 	setDepth(depth) {
 		this.depth = depth;
 	},
@@ -1579,6 +1376,9 @@ const Emitter = {
 		this.grav.min = min;
 		this.grav.max = max;
 	},
+	setOutline(outline) {
+		this.outline = outline;
+	},
 	preset(s) {
 		switch (s) {
 			case 'sparkle':
@@ -1588,13 +1388,66 @@ const Emitter = {
 				this.setSizeInc(-0.1, -0.1);
 				this.setDirection(0, 360);
 				this.setDirectionInc(0, 0);
-				this.setRotation(0, 0);
-				this.setRotationInc(0, 0);
+				this.setRotation(0, 360);
+				this.setRotationInc(-5, 5);
 				this.setAlpha(1, 1);
-				this.setColor(C.blueViolet);
+				this.setColor(C.white);
 				this.setLife(1000, 2000);
 				this.setShape(Shape.star);
 				this.setGravity(0, 0);
+				this.setOutline(Math.randbool());
+				break;
+			case 'puff':
+				this.setSpeed(3, 5);
+				this.setSpeedInc(-0.1, -0.1);
+				this.setSize(5, 10);
+				this.setSizeInc(-0.2, -0.2);
+				this.setDirection(0, 360);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(1, 1);
+				this.setColor(C.white);
+				this.setLife(500, 800);
+				this.setShape(Shape.circle);
+				this.setGravity(0, 0);
+				this.setOutline(false);
+				break;
+			case 'bubble':
+				this.preset('puff');
+				this.setOutline(true);
+				break;
+			case 'box':
+				this.setSpeed(0, 0);
+				this.setSpeedInc(0, 0);
+				this.setSize(2, 4);
+				this.setSizeInc(0, 0);
+				this.setDirection(0, 0);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(1, 1);
+				this.setColor(C.white);
+				this.setLife(300, 500);
+				this.setShape(Shape.square);
+				this.setGravity(0, 0);
+				this.setOutline(true);
+				break;
+			case 'strip':
+				this.setSpeed(0, 0);
+				this.setSpeedInc(0, 0);
+				this.setSize(4, 4);
+				this.setSizeInc(0, 0);
+				this.setDirection(0, 0);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(0.15, 0.15);
+				this.setColor(C.black);
+				this.setLife(12000, 12000);
+				this.setShape(Shape.rect);
+				this.setGravity(0, 0);
+				this.setOutline(false);
 				break;
 		}
 	},
@@ -1615,85 +1468,13 @@ const Emitter = {
 				this.c,
 				Math.range(this.life.min, this.life.max),
 				this.shape,
-				Math.range(this.grav.min, this.grav.max)
+				Math.range(this.grav.min, this.grav.max),
+				this.outline
 			);
 			n.depth = this.depth;
 			OBJ.push(BranthParticle, n);
 		}
 	}
-};
-
-class BranthRoom {
-	constructor(name, w, h) {
-		this.name = name;
-		this.w = w;
-		this.h = h;
-	}
-	start() {}
-	update() {}
-	render() {}
-	renderUI() {}
-}
-
-const Room = {
-	_name: '',
-	_prevName: '',
-	list: [],
-	get names() {
-		return this.list.map(x => x.name);
-	},
-	get id() {
-		return this.names.indexOf(this._name);
-	},
-	get name() {
-		return this._name;
-	},
-	get current() {
-		return this.list[this.id] || new BranthRoom(this._name, CANVAS.width, CANVAS.height);
-	},
-	get previous() {
-		return this.list[this.names.indexOf(this._prevName)] || this.current;
-	},
-	get w() {
-		return this.current.w;
-	},
-	get h() {
-		return this.current.h;
-	},
-	get mid() {
-		return {
-			w: this.current.w * 0.5,
-			h: this.current.h * 0.5
-		}
-	},
-	add(room) {
-		this.list.push(room);
-	},
-	start(name) {
-		if (this.names.includes(name)) {
-			this._prevName = this._name;
-			this._name = name;
-			CANVAS.width = this.w;
-			CANVAS.height = this.h;
-			OBJ.clearAll();
-			Input.reset();
-			this.current.start();
-		}
-		else {
-			console.log(`Room not found: ${name}`);
-		}
-	},
-	update() {
-		this.current.update();
-	},
-	render() {
-		this.current.render();
-	}
-};
-
-const View = {
-	x: 0,
-	y: 0
 };
 
 const UI = {
@@ -1715,42 +1496,58 @@ const RAF = window.requestAnimationFrame
 	|| window.msRequestAnimationFrame
 	|| window.mozRequestAnimationFrame
 	|| window.webkitRequestAnimationFrame
-	|| function(f) { return setTimeout(f, FRAME_RATE) }
+	|| function(f) { return setTimeout(f, Time.fixedDeltaTime) }
 const BRANTH = {
-	start: function() {
-		INPUT_KEY_PARENT.addEventListener('keyup', (e) => Input.eventkeyup(e));
-		INPUT_KEY_PARENT.addEventListener('keydown', (e) => {
-			if (INPUT_KEY_PREVENT_DEFAULT) {
-				const keyCodes = [32, 37, 38, 39, 40];
-				if (keyCodes.includes(e.keyCode)) {
-					e.preventDefault();
-				}
+	start(w = 0, h = 0, options = {}) {
+		GLOBAL.setup();
+		Input.setup();
+		window.onkeyup = (e) => Input.eventKeyUp(e);
+		window.onkeydown = (e) => Input.eventKeyDown(e);
+		window.onmouseup = (e) => Input.eventMouseUp(e);
+		window.onmousedown = (e) => Input.eventMouseDown(e);
+		window.onmousemove = (e) => Input.eventMouseMove(e);
+		window.onresize = () => Room.resize();
+		window.oncontextmenu = (e) => e.preventDefault();
+		CANVAS.oncontextmenu = (e) => e.preventDefault();
+		if (options.backgroundColor) CANVAS.style.backgroundColor = options.backgroundColor;
+		else CANVAS.style.backgroundImage = 'radial-gradient(darkorchid 33%, darkslateblue)';
+		const style = document.createElement('style');
+		style.innerHTML = `
+			* {
+				margin: 0;
+				padding: 0;
 			}
-			Input.eventkeydown(e);
-		});
-		INPUT_MOUSE_PARENT.addEventListener('mouseup', (e) => Input.eventmouseup(e));
-		INPUT_MOUSE_PARENT.addEventListener('mousemove', (e) => Input.eventmousemove(e));
-		INPUT_MOUSE_PARENT.addEventListener('mousedown', (e) => Input.eventmousedown(e));
-		INPUT_TOUCH_PARENT.addEventListener('touchend', (e) => {
-			if (INPUT_TOUCH_PREVENT_DEFAULT) e.preventDefault();
-			Input.eventtouchend(e);
-		});
-		INPUT_TOUCH_PARENT.addEventListener('touchmove', (e) => {
-			if (INPUT_TOUCH_PREVENT_DEFAULT) e.preventDefault();
-			Input.eventtouchmove(e);
-		});
-		INPUT_TOUCH_PARENT.addEventListener('touchstart', (e) => {
-			if (INPUT_TOUCH_PREVENT_DEFAULT) e.preventDefault();
-			Input.eventtouchstart(e);
-		});
-		PARENT.appendChild(CANVAS);
+			body {
+				width: ${w? `${w}px` : '100vw'};
+				height: ${h? `${h}px` : '100vh'};
+				overflow: hidden;
+				position: absolute;
+				top: ${options.VAlign? '50%' : '0'};
+				left: ${options.HAlign? '50%' : '0'};
+				transform: translate(${options.HAlign? '-50%' : '0'}, ${options.VAlign? '-50%' : '0'});
+			}
+			canvas {
+				width: 100%;
+				height: 100%;
+			}
+		`;
+		for (const f of Draw.fontDefault) {
+			const l = document.createElement('link');
+			[l.href, l.rel] = [`https://fonts.googleapis.com/css?family=${f}&display=swap`, 'stylesheet'];
+			document.head.appendChild(l);
+		}
+		document.head.appendChild(style);
+		document.body.appendChild(CANVAS);
 		this.update();
 	},
-	update: function(t) {
+	update(t) {
 		Time.update(t);
+		Sound.update();
 		Room.update();
+		View.update();
 		OBJ.update();
-		Draw.clearRect(0, 0, Room.w, Room.h);
+		if (Input.keyDown(KeyCode.U)) GLOBAL.debugMode = !GLOBAL.debugMode;
+		CTX.clearRect(0, 0, Room.w, Room.h);
 		Room.render();
 		OBJ.render();
 		UI.render();

@@ -675,6 +675,85 @@ const Draw = {
 	fontDefault: ['Arvo', 'Fresca', 'Sniglet'],
 	primitiveType: '',
 	vertices: [],
+	list: [[], []],
+	names: [[], []],
+	add(origin, name, ...src) {
+		this.list[0].push([]);
+		this.names[0].push(name);
+		for (const s of src) {
+			const img = new Image();
+			img.src = s;
+			img.origin = origin;
+			this.list[0][this.names[0].indexOf(name)].push(img);
+		}
+	},
+	addStrip(origin, name, src, strip) {
+		this.names[1].push(name);
+		const img = new Image();
+		img.src = src;
+		img.strip = strip;
+		img.origin = origin;
+		this.list[1][this.names[1].indexOf(name)] = img;
+	},
+	getSprite(name) {
+		return this.list[0][this.names[0].indexOf(name)];
+	},
+	getImage(name, index) {
+		return this.getSprite(name)[index];
+	},
+	getStrip(name) {
+		return this.list[1][this.names[1].indexOf(name)];
+	},
+	sprite(name, index, x, y, xscale = 1, yscale = 1, rot = 0, alpha = 1) {
+		const img = this.getImage(name, index);
+		const dw = img.width * xscale;
+		const dh = img.height * yscale;
+		const dx = -dw * img.origin.x;
+		const dy = -dh * img.origin.y;
+		CTX.save();
+		CTX.translate(x, y);
+		CTX.scale(Math.sign(xscale), Math.sign(yscale));
+		CTX.rotate(rot * Math.PI / 180);
+		CTX.globalAlpha = alpha;
+		CTX.drawImage(img, dx, dy, dw, dh);
+		CTX.globalAlpha = 1;
+		CTX.restore();
+	},
+	image(name, x, y, xscale = 1, yscale = 1, rot = 0, alpha = 1) {
+		this.sprite(name, 0, x, y, xscale, yscale, rot, alpha);
+	},
+	strip(name, index, x, y, xscale = 1, yscale = 1, rot = 0, alpha = 1) {
+		const img = this.getStrip(name);
+		if (img) {
+			const sw = img.width / img.strip;
+			const s = {
+				w: img.width / img.strip,
+				h: img.height,
+				get x() {
+					return index * this.w;
+				},
+				y: 0
+			};
+			const d = {
+				w: s.w * xscale,
+				h: s.h * yscale,
+				get x() {
+					return -this.w * img.origin.x;
+				},
+				get y() {
+					return -this.h * img.origin.y;
+				}
+			};
+			CTX.save();
+			CTX.translate(x, y);
+			CTX.scale(Math.sign(xscale), Math.sign(yscale));
+			CTX.rotate(rot * Math.PI / 180);
+			CTX.globalAlpha = alpha;
+			CTX.drawImage(img, s.x, s.y, s.w, s.h, d.x, d.y, d.w, d.h);
+			CTX.globalAlpha = 1;
+			CTX.restore();
+		}
+	},
 	setFont(s, style = Font.normal) {
 		CTX.font = `${style? `${style} ` : ''}${s} ${this.fontFamily? `${this.fontFamily}, `: ''}${this.fontDefault.join(',')}, serif`;
 	},

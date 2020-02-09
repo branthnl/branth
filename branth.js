@@ -1093,7 +1093,7 @@ const Shape = {
 };
 
 class BranthParticle extends BranthObject {
-	constructor(x, y, spd, spdinc, size, sizeinc, d, dinc, r, rinc, a, c, life, shape, grav, outline, roomPoint) {
+	constructor(x, y, spd, spdinc, size, sizeinc, d, dinc, r, rinc, a, c, life, shape, grav, outline, toView) {
 		super(x, y);
 		this.spd = spd;
 		this.spdinc = spdinc;
@@ -1109,7 +1109,7 @@ class BranthParticle extends BranthObject {
 		this.shape = shape;
 		this.grav = grav;
 		this.outline = outline;
-		this.roomPoint = roomPoint;
+		this.toView = toView;
 		this.g = grav;
 		this.pts = Math.choose(4, 5);
 	}
@@ -1127,7 +1127,7 @@ class BranthParticle extends BranthObject {
 		this.r += this.rinc;
 	}
 	render() {
-		const p = this.roomPoint? View.toView(this) : this;
+		const p = this.toView? View.toView(this) : this;
 		Draw.setAlpha(this.a);
 		Draw.setColor(this.c);
 		switch (this.shape) {
@@ -1199,7 +1199,7 @@ const Emitter = {
 		max: 0.01
 	},
 	outline: false,
-	roomPoint: false,
+	toView: false,
 	setDepth(depth) {
 		this.depth = depth;
 	},
@@ -1262,8 +1262,8 @@ const Emitter = {
 	setOutline(outline) {
 		this.outline = outline;
 	},
-	setRoomPoint(roomPoint) {
-		this.roomPoint = roomPoint;
+	setToView(toView) {
+		this.toView = toView;
 	},
 	preset(s) {
 		switch (s) {
@@ -1282,7 +1282,7 @@ const Emitter = {
 				this.setShape(Shape.star);
 				this.setGravity(0, 0);
 				this.setOutline(Math.randbool());
-				this.setRoomPoint(false);
+				this.setToView(false);
 				break;
 			case 'puff':
 				this.setSpeed(3, 5);
@@ -1299,7 +1299,7 @@ const Emitter = {
 				this.setShape(Shape.circle);
 				this.setGravity(0, 0);
 				this.setOutline(false);
-				this.setRoomPoint(false);
+				this.setToView(false);
 				break;
 			case 'bubble':
 				this.preset('puff');
@@ -1320,7 +1320,7 @@ const Emitter = {
 				this.setShape(Shape.square);
 				this.setGravity(0, 0);
 				this.setOutline(true);
-				this.setRoomPoint(false);
+				this.setToView(false);
 				break;
 			case 'strip':
 				this.setSpeed(0, 0);
@@ -1337,7 +1337,7 @@ const Emitter = {
 				this.setShape(Shape.rect);
 				this.setGravity(0, 0);
 				this.setOutline(false);
-				this.setRoomPoint(true);
+				this.setToView(true);
 				break;
 		}
 	},
@@ -1360,7 +1360,7 @@ const Emitter = {
 				this.shape,
 				Math.range(this.grav.min, this.grav.max),
 				this.outline,
-				this.roomPoint
+				this.toView
 			);
 			n.depth = this.depth;
 			OBJ.push(BranthParticle, n);

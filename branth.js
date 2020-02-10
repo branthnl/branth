@@ -809,7 +809,7 @@ const Draw = {
 		CTX.textBaseline = v;
 	},
 	text(x, y, text) {
-		let [t, baseline] = [text.split('\n'), 0];
+		let [t, baseline] = [('' + text).split('\n'), 0];
 		switch (CTX.textBaseline) {
 			case Align.m: baseline = -Font.size * (t.length - 1) * 0.5; break;
 			case Align.b: baseline = -Font.size * (t.length - 1); break;
@@ -819,10 +819,10 @@ const Draw = {
 		}
 	},
 	textWidth(text) {
-		return Math.max(...text.split('\n').map(v => CTX.measureText(v).width));
+		return Math.max(...('' + text).split('\n').map(v => CTX.measureText(v).width));
 	},
 	textHeight(text) {
-		return Font.size * text.split('\n').length;
+		return Font.size * ('' + text).split('\n').length;
 	},
 	draw(outline = false) {
 		if (outline) CTX.stroke();

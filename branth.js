@@ -718,7 +718,7 @@ const Draw = {
 		return this.list[1][this.names[1].indexOf(name)];
 	},
 	sprite(name, index, x, y, xscale = 1, yscale = 1, rot = 0, alpha = 1) {
-		const img = this.getImage(name, index);
+		const img = this.getSprite(name)[index];
 		const dw = img.width * xscale;
 		const dh = img.height * yscale;
 		const dx = -dw * img.origin.x;

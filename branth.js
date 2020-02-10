@@ -21,6 +21,9 @@ class Vector2 {
 	static dot(v1, v2) {
 		return v1.x * v2.x + v1.y * v2.y;
 	}
+	static get zero() {
+		return new Vector2(0, 0);
+	}
 }
 
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
@@ -46,6 +49,16 @@ const GLOBAL = {
 	key: '_' + Math.random().toString(36).substr(2, 9),
 	debugMode: true,
 	interacted: false,
+	setProductionMode(mode = true) {
+		if (mode) {
+			this.debugMode = false;
+			this.interacted = true;
+		}
+		else {
+			this.debugMode = true;
+			this.interacted = false;
+		}
+	},
 	save(key, value) {
 		sessionStorage.setItem(key, value);
 	},
@@ -698,8 +711,8 @@ const Draw = {
 	getSprite(name) {
 		return this.list[0][this.names[0].indexOf(name)];
 	},
-	getImage(name, index) {
-		return this.getSprite(name)[index];
+	getImage(name) {
+		return this.getSprite(name)[0];
 	},
 	getStrip(name) {
 		return this.list[1][this.names[1].indexOf(name)];
@@ -796,13 +809,20 @@ const Draw = {
 		CTX.textBaseline = v;
 	},
 	text(x, y, text) {
-		CTX.fillText(text, x, y);
+		let [t, baseline] = [text.split('\n'), 0];
+		switch (CTX.textBaseline) {
+			case Align.m: baseline = -Font.size * (t.length - 1) * 0.5; break;
+			case Align.b: baseline = -Font.size * (t.length - 1); break;
+		}
+		for (let i = 0; i < t.length; i++) {
+			CTX.fillText(t[i], x, y + baseline + Font.size * i);
+		}
 	},
 	textWidth(text) {
-		return CTX.measureText(text).width;
+		return Math.max(...text.split('\n').map(v => CTX.measureText(v).width));
 	},
 	textHeight(text) {
-		return Font.size;
+		return Font.size * text.split('\n').length;
 	},
 	draw(outline = false) {
 		if (outline) CTX.stroke();
@@ -1529,12 +1549,12 @@ const View = {
 	set y(val) {
 		this._y = val;
 	},
-	target(x, y) {
-		this._x = x;
-		this._y = y;
+	target(x, y, t = 1) {
+		this._x = Math.range(this._x, x, t);
+		this._y = Math.range(this._y, y, t);
 	},
-	follow(i) {
-		this.target(i.x - Room.mid.w, i.y - Room.mid.h);
+	follow(i, t = 1) {
+		this.target(i.x - Room.mid.w, i.y - Room.mid.h, t);
 	},
 	shake(mag, int) {
 		this.mag = mag;

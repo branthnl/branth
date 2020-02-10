@@ -27,8 +27,8 @@ class Vector2 {
 }
 
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
-Math.range = (min, max, t) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
-Math.irange = (min, max) => Math.floor(Math.range(min, max));
+Math.range = (min, max = 0, t = null) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
+Math.irange = (min, max = 0) => Math.floor(Math.range(min, max));
 Math.choose = (...args) => args[Math.irange(0, args.length)];
 Math.randneg = (t = 0.5) => Math.random() > t? -1 : 1;
 Math.randbool = () => Math.random() > 0.5;

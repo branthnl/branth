@@ -366,6 +366,16 @@ class BranthMouse extends BranthKey {
 	}
 }
 
+class BranthTouch extends BranthKey {
+	constructor(id) {
+		super(id);
+		this.position = new Vector2(0, 0);
+	}
+	get id() {
+		return this.keyCode;
+	}
+}
+
 const Input = {
 	metaKeys: [
 		KeyCode.Alt,
@@ -380,16 +390,27 @@ const Input = {
 		KeyCode.Right,
 		KeyCode.Space
 	],
-	list: [[], []],
+	list: [[], [], []],
 	mouseMove: false,
 	mousePosition: new Vector2(0, 0),
+	touches: [],
+	changedTouches: [],
+	get touchCount() {
+		return this.touches.length;
+	},
+	get changedTouchCount() {
+		return this.changedTouches.length;
+	},
 	setup() {
-		this.list = [[], []];
+		this.list = [[], [], []];
 		for (const k of Object.values(KeyCode)) {
 			this.list[0].push(new BranthKey(k));
 		}
 		for (const b of Object.values(Mouse)) {
 			this.list[1].push(new BranthMouse(b));
+		}
+		for (let i = 0; i < 10; i++) {
+			this.list[2].push(new BranthTouch(i));
 		}
 	},
 	reset() {
@@ -429,6 +450,18 @@ const Input = {
 	},
 	mouseHold(button) {
 		return this.list[1][button].hold;
+	},
+	getTouch(id) {
+		return this.list[2][id];
+	},
+	touchUp(id) {
+		return this.list[2][id].released;
+	},
+	touchDown(id) {
+		return this.list[2][id].pressed;
+	},
+	touchHold(id) {
+		return this.list[2][id].hold;
 	},
 	eventKeyUp(e) {
 		for (const k of this.list[0]) {
@@ -472,6 +505,50 @@ const Input = {
 			this.updateMousePosition(e);
 			m.down();
 		}
+	},
+	convertTouch(t) {
+		const b = CANVAS.getBoundingClientRect();
+		return {
+			id: t.identifier,
+			x: t.clientX - b.x,
+			y: t.clientY - b.y
+		};
+	},
+	updateTouches(e) {
+		this.touches = [];
+		this.changedTouches = [];
+		for (const t of e.touches) {
+			this.touches.push(this.convertTouch(t));
+		}
+		for (const t of e.changedTouches) {
+			this.changedTouches.push(this.convertTouch(t));
+		}
+	},
+	eventTouchEnd(e) {
+		for (const c of e.changedTouches) {
+			const t = this.convertTouch(c);
+			this.list[2][t.id].position = new Vector2(t.x, t.y);
+			this.list[2][t.id].up();
+		}
+		this.updateTouches(e);
+	},
+	eventTouchMove(e) {
+		for (const c of e.changedTouches) {
+			const t = this.convertTouch(c);
+			this.list[2][t.id].position = new Vector2(t.x, t.y);
+		}
+		this.updateTouches(e);
+	},
+	eventTouchStart(e) {
+		GLOBAL.interacted = true;
+		for (const c of e.changedTouches) {
+			const t = this.convertTouch(c);
+			if(!this.list[2][t.id].hold) {
+				this.list[2][t.id].position = new Vector2(t.x, t.y);
+				this.list[2][t.id].down();
+			}
+		}
+		this.updateTouches(e);
 	}
 };
 
@@ -1000,29 +1077,6 @@ const Draw = {
 		this.roundRectTransformed(x, y, w, h, r, outline, 1, 1, angle, origin);
 	}
 };
-
-class Rect {
-	constructor(x, y, w, h) {
-		this.x = x;
-		this.y = y;
-		this.w = w;
-		this.h = h;
-	}
-	draw(outline = false) {
-		Draw.rect(this.x, this.y, this.w, this.h, outline);
-	}
-}
-
-class Circle {
-	constructor(x, y, r) {
-		this.x = x;
-		this.y = y;
-		this.r = r;
-	}
-	draw(outline = false) {
-		Draw.circle(this.x, this.y, this.r, outline);
-	}
-}
 
 const OBJ = {
 	ID: 0,
@@ -1619,6 +1673,9 @@ const BRANTH = {
 		window.onmouseup = (e) => Input.eventMouseUp(e);
 		window.onmousedown = (e) => Input.eventMouseDown(e);
 		window.onmousemove = (e) => Input.eventMouseMove(e);
+		window.ontouchend = (e) => Input.eventTouchEnd(e);
+		window.ontouchmove = (e) => Input.eventTouchMove(e);
+		window.ontouchstart = (e) => Input.eventTouchStart(e);
 		window.onresize = () => Room.resize();
 		window.oncontextmenu = (e) => e.preventDefault();
 		CANVAS.oncontextmenu = (e) => e.preventDefault();

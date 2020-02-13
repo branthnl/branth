@@ -787,12 +787,12 @@ const Draw = {
 		}
 	},
 	addStrip(origin, name, src, strip) {
-		this.names[1].push(name);
 		const img = new Image();
 		img.src = src;
 		img.strip = strip;
 		img.origin = origin;
-		this.list[1][this.names[1].indexOf(name)] = img;
+		this.list[1].push(img);
+		this.names[1].push(name);
 	},
 	getSprite(name) {
 		return this.list[0][this.names[0].indexOf(name)];
@@ -1202,6 +1202,7 @@ class BranthObject {
 	awake() {}
 	start() {}
 	lateStart() {}
+	physicsUpdate() {}
 	earlyUpdate() {}
 	update() {}
 	lateUpdate() {}
@@ -1244,6 +1245,165 @@ class BranthBehaviour extends BranthObject {
 	}
 	lateUpdate() {
 		this.alarmUpdate();
+	}
+}
+
+const Physics = {
+	list: [],
+	add(id) {
+		this.list.push(OBJ.get(id));
+	},
+	remove(id) {
+		for (const i in this.list) {
+			if (this.list[i].id === id) {
+				this.list.splice(i, 1);
+			}
+		}
+	},
+	update() {
+		for (const i of this.list) {
+			i.physicsUpdate();
+		}
+	}
+};
+
+class Collider2D {
+	constructor(parent, x, y) {
+		this.parent = parent;
+		this.x = x;
+		this.y = y;
+	}
+	get position() {
+		return Vector2.add(this.parent, new Vector2(this.x, this.y));
+	}
+	update() {}
+	draw() {}
+}
+
+class BoxCollider2D extends Collider2D {
+	constructor(parent, x, y, w, h) {
+		super(parent, x, y);
+		this.w = w;
+		this.h = h;
+	}
+	draw() {
+		const p = this.position;
+		Draw.rect(p.x, p.y, this.w, this.h, true);
+	}
+}
+
+class CircleCollider2D extends Collider2D {
+	constructor(parent, x, y, r) {
+		super(parent, x, y);
+		this.r = r;
+	}
+	draw() {
+		const p = this.position;
+		Draw.circle(p.x, p.y, this.r, true);
+	}
+}
+
+class PolygonCollider2D extends Collider2D {
+	constructor(parent, x, y, points) {
+		super(parent, x, y);
+		this.points = points;
+	}
+	draw() {
+		const p = this.position;
+		Draw.primitiveBegin();
+		for (const t of this.points) {
+			Draw.vertex(p.x + t.x, p.y + t.y);
+		}
+		Draw.primitiveEnd(Primitive.stroke);
+	}
+}
+
+class BranthGameObject extends BranthBehaviour {
+	constructor(x, y) {
+		super(x, y);
+		this.xprevious = x;
+		this.yprevious = y;
+		this.spriteName = '';
+		this.imageIndex = 0;
+		this.imageXScale = 1;
+		this.imageYScale = 1;
+		this.imageAngle = 0;
+		this.imageAlpha = 1;
+		this._imageSpeed = 0;
+		this.hspeed = 0;
+		this.vspeed = 0;
+		this.gravity = 0;
+		this.gravityDirection = 90;
+		this.colliders = [];
+		this.showCollider = false;
+	}
+	get imageType() {
+		return Draw.getSprite(this.spriteName)? 0 : (Draw.getStrip(this.spriteName)? 1 : -1);
+	}
+	get imageNumber() {
+		let n = 0;
+		switch (this.imageType) {
+			case 0: n = Draw.getSprite(this.spriteName).length; break;
+			case 1: n = Draw.getStrip(this.spriteName).strip; break;
+		}
+		return n;
+	}
+	get imageSpeed() {
+		return this._imageSpeed;
+	}
+	set imageSpeed(val) {
+		this._imageSpeed = val;
+		if (this._imageSpeed === 0) {
+			this.alarm[0] = -1;
+		}
+		else {
+			if (this.alarm[0] === -1) {
+				this.alarm[0] = 20 / this._imageSpeed;
+			}
+		}
+	}
+	addCollider(cls, ...args) {
+		switch (cls) {
+			case BoxCollider2D: this.colliders.push(new BoxCollider2D(this, args[0], args[1], args[2], args[3])); break;
+			default: this.colliders.push(new cls(this, args[0], args[1], args[2])); break;
+		}
+	}
+	physicsUpdate() {
+		const g = Math.lendir(this.gravity, this.gravityDirection);
+		this.xprevious = this.x;
+		this.yprevious = this.y;
+		this.hspeed += g.x;
+		this.vspeed += g.y;
+		this.x += this.hspeed;
+		this.y += this.vspeed;
+	}
+	drawSelf() {
+		switch (this.imageType) {
+			case 0: Draw.sprite(this.spriteName, this.imageIndex, this.x, this.y, this.imageXScale, this.imageYScale, this.imageAngle, this.imageAlpha); break;
+			case 1: Draw.strip(this.spriteName, this.imageIndex, this.x, this.y, this.imageXScale, this.imageYScale, this.imageAngle, this.imageAlpha); break;
+		}
+	}
+	drawCollider() {
+		Draw.setColor(C.lightGreen);
+		for (const c of this.colliders) {
+			c.draw();
+		}
+	}
+	render() {
+		this.drawSelf();
+		if (this.showCollider) {
+			this.drawCollider();
+		}
+	}
+	alarm0() {
+		const n = this.imageNumber;
+		if (n > 0) {
+			this.imageIndex++;
+			if (this.imageIndex >= n) {
+				this.imageIndex -= n;
+			}
+		}
+		this.alarm[0] = 20 / this._imageSpeed;
 	}
 }
 
@@ -1720,6 +1880,7 @@ const BRANTH = {
 		Sound.update();
 		Room.update();
 		View.update();
+		Physics.update();
 		OBJ.update();
 		if (Input.keyDown(KeyCode.U)) GLOBAL.debugMode = !GLOBAL.debugMode;
 		CTX.clearRect(0, 0, Room.w, Room.h);

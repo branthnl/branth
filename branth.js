@@ -85,15 +85,18 @@ const Time = {
 	get frameRate() {
 		return this.fixedDeltaTime / this.deltaTime;
 	},
+	get scaledDeltaTime() {
+		return this.deltaTime / this.fixedDeltaTime;
+	},
 	update(t) {
 		this.lastTime = this.time || 0;
 		this.time = t || 0;
 		this.deltaTime = this.time - this.lastTime || this.fixedDeltaTime;
-		if (this._fpsCount >= 60) {
+		if (this._fpsCount >= 6) {
 			this.FPS = Math.floor(this.frameRate * 60);
-			this._fpsCount -= 60;
+			this._fpsCount -= 6;
 		}
-		else this._fpsCount += this.frameRate;
+		else this._fpsCount++;
 	},
 	toSeconds(t) {
 		return Math.ceil(t / 1000);
@@ -1100,7 +1103,7 @@ const OBJ = {
 	take(cls) {
 		return this.list[this.classes.indexOf(cls)];
 	},
-	push(cls, i, dontStart) {
+	push(cls, i, dontStart = false) {
 		if (this.classes.includes(cls)) {
 			this.list[this.classes.indexOf(cls)].push(i);
 			if (!dontStart) {
@@ -1114,9 +1117,9 @@ const OBJ = {
 		}
 		if (GLOBAL.debugMode) console.log(`Class not found: ${cls.name}`);
 	},
-	create(cls, x = 0, y = 0) {
+	create(cls, x, y) {
 		if (this.classes.includes(cls)) {
-			const i = new cls(x, y);
+			const i = new cls(x || 0, y || 0);
 			this.list[this.classes.indexOf(cls)].push(i);
 			i.awake();
 			if (i.active) {
@@ -1792,6 +1795,12 @@ const View = {
 	},
 	toView(v) {
 		return Vector2.subtract(v, this);
+	},
+	getRoom(x, y) {
+		return this.toRoom(new Vector2(x, y), this);
+	},
+	getView(x, y) {
+		return this.toView(new Vector2(x, y), this);
 	},
 	update() {
 		if (this.alarm > 0) {

@@ -935,6 +935,11 @@ const Draw = {
 	resetStrokeWeight() {
 		CTX.lineWidth = 1;
 	},
+	arc(x, y, r, startAngle, endAngle, outline = false) {
+		CTX.beginPath();
+		CTX.arc(x, y, r, Math.degtorad(startAngle), Math.degtorad(endAngle));
+		this.draw(outline);
+	},
 	line(x1, y1, x2, y2) {
 		CTX.beginPath();
 		CTX.moveTo(x1, y1);

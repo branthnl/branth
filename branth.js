@@ -1085,6 +1085,7 @@ const OBJ = {
 	ID: 0,
 	list: [],
 	classes: [],
+	destroyCount: 0,
 	add(cls) {
 		this.list.push([]);
 		this.classes.push(cls);
@@ -1135,6 +1136,7 @@ const OBJ = {
 			for (const i in o) {
 				if (o[i].id === id) {
 					o.splice(i, 1);
+					this.destroyCount++;
 				}
 			}
 		}
@@ -1162,12 +1164,15 @@ const OBJ = {
 	},
 	update() {
 		for (const o of this.list) {
-			for (const i of o) {
+			for (let ii = 0; ii < o.length; ii++) {
+				const i = o[ii];
 				if (i) {
 					if (i.active) {
+						this.destroyCount = 0;
 						i.earlyUpdate();
 						i.update();
 						i.lateUpdate();
+						ii -= this.destroyCount;
 					}
 				}
 			}

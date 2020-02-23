@@ -30,6 +30,7 @@ Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
 Math.range = (min, max = 0, t = null) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
 Math.irange = (min, max = 0) => Math.floor(Math.range(min, max));
 Math.choose = (...args) => args[Math.irange(0, args.length)];
+Math.pick = (arr) => arr[Math.irange(arr.length)];
 Math.randneg = (t = 0.5) => Math.random() < t? -1 : 1;
 Math.randbool = (t = 0.5) => Math.random() < t;
 Math.degtorad = (d) => d * Math.PI / 180;
@@ -47,7 +48,7 @@ const CTX = CANVAS.getContext('2d');
 
 const GLOBAL = {
 	key: '_' + Math.random().toString(36).substr(2, 9),
-	debugMode: true,
+	debugMode: 0,
 	interacted: false,
 	setProductionMode(mode = true) {
 		if (mode) {
@@ -364,6 +365,11 @@ class BranthKey {
 }
 
 class BranthMouse extends BranthKey {
+	constructor(keyCode) {
+		super(keyCode);
+		this.doubleStep = 0;
+		this.doublePressed = false;
+	}
 	get button() {
 		return this.keyCode;
 	}
@@ -396,6 +402,7 @@ const Input = {
 	list: [[], [], []],
 	mouseMove: false,
 	mousePosition: new Vector2(0, 0),
+	doubleClickStep: 12,
 	touches: [],
 	changedTouches: [],
 	get touchCount() {
@@ -414,6 +421,20 @@ const Input = {
 		}
 		for (let i = 0; i < 10; i++) {
 			this.list[2].push(new BranthTouch(i));
+		}
+	},
+	update() {
+		for (let i = this.list[1].length - 1; i >= 0; i--) {
+			const m = this.list[1][i];
+			m.doublePressed = false;
+			if (m.doubleStep > 0) {
+				if (m.pressed) {
+					m.doublePressed = true;
+					m.doubleStep = 0;
+				}
+				else m.doubleStep--;
+			}
+			else if (m.pressed) m.doubleStep = this.doubleClickStep;
 		}
 	},
 	reset() {
@@ -453,6 +474,9 @@ const Input = {
 	},
 	mouseHold(button) {
 		return this.list[1][button].hold;
+	},
+	mouseDouble(button) {
+		return this.list[1][button].doublePressed;
 	},
 	getTouch(id) {
 		return this.list[2][id];
@@ -1090,21 +1114,21 @@ const OBJ = {
 	ID: 0,
 	list: [],
 	classes: [],
-	destroyCount: 0,
+	destroyData: [],
 	add(cls) {
 		this.list.push([]);
 		this.classes.push(cls);
 	},
 	get(id) {
-		for (const o of this.list) {
-			for (const i of o) {
-				if (i) {
-					if (i.id === id) {
-						return i;
-					}
+		for (let i = this.list.length - 1; i >= 0; i--) {
+			for (let j = this.list[i].length - 1; j >= 0; j--) {
+				const k = this.list[i][j];
+				if (k.id === id) {
+					return k;
 				}
 			}
 		}
+		return null;
 	},
 	take(cls) {
 		return this.list[this.classes.indexOf(cls)];
@@ -1137,11 +1161,13 @@ const OBJ = {
 		if (GLOBAL.debugMode) console.log(`Class not found: ${cls.name}`);
 	},
 	destroy(id) {
-		for (const o of this.list) {
-			for (const i in o) {
-				if (o[i].id === id) {
-					o.splice(i, 1);
-					this.destroyCount++;
+		for (let i = this.list.length - 1; i >= 0; i--) {
+			for (let j = this.list[i].length - 1; j >= 0; j--) {
+				const k = this.list[i][j];
+				if (k.id === id) {
+					k.onDestroy();
+					this.destroyData.push({ i, j });
+					return this.list[i].splice(j, 1)[0];
 				}
 			}
 		}
@@ -1168,35 +1194,45 @@ const OBJ = {
 		return n;
 	},
 	update() {
-		for (const o of this.list) {
-			for (let ii = 0; ii < o.length; ii++) {
-				const i = o[ii];
-				if (i) {
-					if (i.active) {
-						this.destroyCount = 0;
-						i.earlyUpdate();
-						i.update();
-						i.lateUpdate();
-						ii -= this.destroyCount;
+		for (let i = this.list.length - 1; i >= 0; i--) {
+			for (let j = this.list[i].length - 1; j >= 0; j--) {
+				const k = this.list[i][j];
+				if (k) {
+					if (k.active) {
+						this.destroyData = [];
+						k.earlyUpdate();
+						k.update();
+						k.lateUpdate();
+						if (this.destroyData.length > 0) {
+							let jCost = 0;
+							for (let l = this.destroyData.length - 1; l >= 0; l--) {
+								if (this.destroyData[l].i === i) {
+									if (this.destroyData[l].j < j + 1) {
+										j--;
+									}
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 	},
 	render() {
-		const so = [];
-		for (const o of this.list) {
-			for (const i of o) {
-				if (i) {
-					if (i.visible) {
-						so.push(i);
+		const h = [];
+		for (let i = this.list.length - 1; i >= 0; i--) {
+			for (let j = this.list[i].length - 1; j >= 0; j--) {
+				const k = this.list[i][j];
+				if (k) {
+					if (k.visible) {
+						h.push(k);
 					}
 				}
 			}
 		}
-		so.sort((a, b) => (a.depth > b.depth)? -1 : 1);
-		for (const i of so) {
-			i.render();
+		h.sort((a, b) => (a.depth < b.depth)? -1 : 1);
+		for (let i = h.length - 1; i >= 0; i--) {
+			h[i].render();
 		}
 	}
 };
@@ -1221,6 +1257,7 @@ class BranthObject {
 	lateUpdate() {}
 	render() {}
 	renderUI() {}
+	onDestroy() {}
 }
 
 class BranthBehaviour extends BranthObject {
@@ -1828,16 +1865,17 @@ const View = {
 
 const UI = {
 	render() {
-		Room.current.renderUI();
-		for (const o of OBJ.list) {
-			for (const i of o) {
-				if (i) {
-					if (i.visible) {
-						i.renderUI();
+		for (let i = OBJ.list.length - 1; i >= 0; i--) {
+			for (let j = OBJ.list[i].length - 1; j >= 0; j--) {
+				const k = OBJ.list[i][j];
+				if (k) {
+					if (k.visible) {
+						k.renderUI();
 					}
 				}
 			}
 		}
+		Room.current.renderUI();
 	}
 };
 
@@ -1899,12 +1937,13 @@ const BRANTH = {
 	},
 	update(t) {
 		Time.update(t);
+		Input.update();
 		Sound.update();
 		Room.update();
 		View.update();
 		Physics.update();
 		OBJ.update();
-		if (Input.keyDown(KeyCode.U)) GLOBAL.debugMode = !GLOBAL.debugMode;
+		if (Input.keyDown(KeyCode.U)) if (++GLOBAL.debugMode > 3) GLOBAL.debugMode = 0;
 		CTX.clearRect(0, 0, Room.w, Room.h);
 		Room.render();
 		OBJ.render();

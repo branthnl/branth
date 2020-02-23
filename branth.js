@@ -1133,14 +1133,14 @@ const OBJ = {
 	take(cls) {
 		return this.list[this.classes.indexOf(cls)];
 	},
-	push(cls, i, dontStart = false) {
+	push(cls, i, justPush = true) {
 		if (this.classes.includes(cls)) {
 			this.list[this.classes.indexOf(cls)].push(i);
-			if (!dontStart) {
+			if (!justPush) {
 				i.awake();
-				if (i.active) {
+				if (i._active) {
 					i.start();
-					i.lateStart();
+					i.afterStart();
 				}
 			}
 			return i;
@@ -1152,9 +1152,9 @@ const OBJ = {
 			const i = new cls(x || 0, y || 0);
 			this.list[this.classes.indexOf(cls)].push(i);
 			i.awake();
-			if (i.active) {
+			if (i._active) {
 				i.start();
-				i.lateStart();
+				i.afterStart();
 			}
 			return i;
 		}
@@ -1175,34 +1175,39 @@ const OBJ = {
 	clear(cls) {
 		this.list[this.classes.indexOf(cls)] = [];
 	},
-	clearAll(cls) {
-		for (const i in this.list) {
+	clearAll() {
+		for (let i = this.list.length - 1; i >= 0; i--) {
 			this.list[i] = [];
 		}
 		this.ID = 0;
 	},
 	nearest(cls, x, y) {
-		let n = null;
-		let dis = Infinity;
-		for (const i of this.take(cls)) {
-			const d = Math.pointdis(new Vector2(x, y), i);
-			if (d < dis) {
-				n = i;
-				dis = d;
+		let f = null;
+		const g = this.take(cls);
+		if (g.length > 0) {
+			f = g[0];
+			let h = Math.pointdis(new Vector2(x, y), f);
+			for (let i = g.length - 1; i > 0; i--) {
+				const j = g[i];
+				const k = Math.linedis(x, y, j.x, j.y);
+				if (k < h) {
+					f = j;
+					h = k;
+				}
 			}
 		}
-		return n;
+		return f;
 	},
 	update() {
 		for (let i = this.list.length - 1; i >= 0; i--) {
 			for (let j = this.list[i].length - 1; j >= 0; j--) {
 				const k = this.list[i][j];
 				if (k) {
-					if (k.active) {
+					if (k._active) {
 						this.destroyData = [];
-						k.earlyUpdate();
+						k.beforeUpdate();
 						k.update();
-						k.lateUpdate();
+						k.afterUpdate();
 						if (this.destroyData.length > 0) {
 							let jCost = 0;
 							for (let l = this.destroyData.length - 1; l >= 0; l--) {
@@ -1241,22 +1246,30 @@ class BranthObject {
 	constructor(x, y) {
 		this.id = OBJ.ID++;
 		this.depth = 0;
-		this.active = true;
+		this._active = true;
 		this.visible = true;
 		this.xstart = x;
 		this.ystart = y;
 		this.x = x;
 		this.y = y;
 	}
+	get active() {
+		return this._active;
+	}
+	set active(val) {
+		if (!this._active && val) {
+			this.start();
+			this.afterStart();
+		}
+		this._active = val;
+	}
 	awake() {}
 	start() {}
-	lateStart() {}
-	physicsUpdate() {}
-	earlyUpdate() {}
+	afterStart() {}
+	beforeUpdate() {}
 	update() {}
-	lateUpdate() {}
+	afterUpdate() {}
 	render() {}
-	renderUI() {}
 	onDestroy() {}
 }
 
@@ -1273,7 +1286,7 @@ class BranthBehaviour extends BranthObject {
 	alarm5() {}
 	alarmUpdate() {
 		if (this.alarm) {
-			for (let i = 0; i < this.alarm.length; i++) {
+			for (let i = this.alarm.length - 1; i >= 0; i--) {
 				if (this.alarm[i] !== null) {
 					if (this.alarm[i] > 0) {
 						this.alarm[i] = Math.max(0, this.alarm[i] - Time.deltaTime);
@@ -1293,26 +1306,29 @@ class BranthBehaviour extends BranthObject {
 			}
 		}
 	}
-	lateUpdate() {
+	afterUpdate() {
 		this.alarmUpdate();
 	}
 }
 
 const Physics = {
 	list: [],
-	add(id) {
-		this.list.push(OBJ.get(id));
+	add(i) {
+		if (i instanceof BranthGameObject) {
+			this.list.push(i);
+		}
+		else if (GLOBAL.debugMode) console.log(`You should only pass BranthGameObject coz it has physicsUpdate() in it.`);
 	},
 	remove(id) {
-		for (const i in this.list) {
+		for (let i = this.list.length - 1; i >= 0; i--) {
 			if (this.list[i].id === id) {
 				this.list.splice(i, 1);
 			}
 		}
 	},
 	update() {
-		for (const i of this.list) {
-			i.physicsUpdate();
+		for (let i = this.list.length - 1; i >= 0; i--) {
+			this.list[i].physicsUpdate();
 		}
 	}
 };
@@ -1865,16 +1881,6 @@ const View = {
 
 const UI = {
 	render() {
-		for (let i = OBJ.list.length - 1; i >= 0; i--) {
-			for (let j = OBJ.list[i].length - 1; j >= 0; j--) {
-				const k = OBJ.list[i][j];
-				if (k) {
-					if (k.visible) {
-						k.renderUI();
-					}
-				}
-			}
-		}
 		Room.current.renderUI();
 	}
 };

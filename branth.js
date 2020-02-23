@@ -50,15 +50,10 @@ const GLOBAL = {
 	key: '_' + Math.random().toString(36).substr(2, 9),
 	debugMode: 0,
 	interacted: false,
-	setProductionMode(mode = true) {
-		if (mode) {
-			this.debugMode = false;
-			this.interacted = true;
-		}
-		else {
-			this.debugMode = true;
-			this.interacted = false;
-		}
+	productionMode: false,
+	setProductionMode(mode) {
+		this.productionMode = mode;
+		this.interacted = mode;
 	},
 	save(key, value) {
 		sessionStorage.setItem(key, value);
@@ -146,7 +141,7 @@ const Sound = {
 				sources.push(`<source src="${p}" type="audio/${type}">`);
 			}
 			else {
-				if (GLOBAL.debugMode) console.log(`Sound file extension not supported: .${ext}`);
+				if (!GLOBAL.productionMode) console.log(`Sound file extension not supported: .${ext}`);
 			}
 		}
 		if (sources.length > 0) {
@@ -174,7 +169,7 @@ const Sound = {
 				s.play();
 			}
 		}
-		else if (GLOBAL.debugMode) console.log(`Failed to play sound because the user didn't interact with the document first.`);
+		else if (!GLOBAL.productionMode) console.log(`Failed to play sound because the user didn't interact with the document first.`);
 	},
 	loop(name) {
 		const s = this.get(name);
@@ -185,7 +180,7 @@ const Sound = {
 				s.play();
 			}
 		}
-		else if (GLOBAL.debugMode) console.log(`Failed to loop sound because the user didn't interact with the document first.`);
+		else if (!GLOBAL.productionMode) console.log(`Failed to loop sound because the user didn't interact with the document first.`);
 	},
 	stop(name) {
 		const s = this.get(name);
@@ -451,7 +446,7 @@ const Input = {
 				return k;
 			}
 		}
-		if (GLOBAL.debugMode) console.log(`No key found with key code: ${keyCode}`);
+		if (!GLOBAL.productionMode) console.log(`No key found with key code: ${keyCode}`);
 		return new BranthKey(-1);
 	},
 	keyUp(keyCode) {
@@ -1145,7 +1140,7 @@ const OBJ = {
 			}
 			return i;
 		}
-		if (GLOBAL.debugMode) console.log(`Class not found: ${cls.name}`);
+		if (!GLOBAL.productionMode) console.log(`Class not found: ${cls.name}`);
 	},
 	create(cls, x, y) {
 		if (this.classes.includes(cls)) {
@@ -1158,7 +1153,7 @@ const OBJ = {
 			}
 			return i;
 		}
-		if (GLOBAL.debugMode) console.log(`Class not found: ${cls.name}`);
+		if (!GLOBAL.productionMode) console.log(`Class not found: ${cls.name}`);
 	},
 	destroy(id) {
 		for (let i = this.list.length - 1; i >= 0; i--) {
@@ -1317,7 +1312,7 @@ const Physics = {
 		if (i instanceof BranthGameObject) {
 			this.list.push(i);
 		}
-		else if (GLOBAL.debugMode) console.log(`You should only pass BranthGameObject coz it has physicsUpdate() in it.`);
+		else if (!GLOBAL.productionMode) console.log(`You should only pass BranthGameObject coz it has physicsUpdate() in it.`);
 	},
 	remove(id) {
 		for (let i = this.list.length - 1; i >= 0; i--) {
@@ -1770,8 +1765,8 @@ const Room = {
 	scale: 2,
 	w: 300,
 	h: 150,
-	id: 0,
-	pd: 0,
+	id: -1,
+	pd: -1,
 	list: [],
 	names: [],
 	get mid() {
@@ -1784,7 +1779,7 @@ const Room = {
 		return this.names[this.id];
 	},
 	get current() {
-		return this.list[this.id] || new BranthRoom();
+		return this.list[this.id];
 	},
 	get previous() {
 		return this.list[this.pd];
@@ -1794,21 +1789,18 @@ const Room = {
 		this.names.push(room.name);
 	},
 	start(name) {
-		this.pd = this.id;
-		this.id = this.names.indexOf(name);
-		OBJ.clearAll();
-		Input.reset();
-		this.resize();
-		this.current.start();
+		if (this.names.includes(name)) {
+			this.pd = this.id;
+			this.id = this.names.indexOf(name);
+			OBJ.clearAll();
+			Input.reset();
+			this.resize();
+			this.current.start();
+		}
+		else if (!GLOBAL.productionMode) console.log(`Room not found: ${name}`);
 	},
 	restart() {
 		this.start(this.name);
-	},
-	update() {
-		this.current.update();
-	},
-	render() {
-		this.current.render();
 	},
 	resize() {
 		const [b, s] = [CANVAS.getBoundingClientRect(), this.scale];
@@ -1879,12 +1871,6 @@ const View = {
 	}
 };
 
-const UI = {
-	render() {
-		Room.current.renderUI();
-	}
-};
-
 const RAF = window.requestAnimationFrame
 	|| window.msRequestAnimationFrame
 	|| window.mozRequestAnimationFrame
@@ -1907,8 +1893,13 @@ const BRANTH = {
 		CANVAS.oncontextmenu = (e) => e.preventDefault();
 		if (options.backgroundColor) CANVAS.style.backgroundColor = options.backgroundColor;
 		else CANVAS.style.backgroundImage = 'radial-gradient(darkorchid 33%, darkslateblue)';
-		const style = document.createElement('style');
-		style.innerHTML = `
+		for (let i = 0; i < Draw.fontDefault.length; i++) {
+			const j = document.createElement('link');
+			[j.href, j.rel] = [`https://fonts.googleapis.com/css?family=${Draw.fontDefault[i]}&display=swap`, 'stylesheet'];
+			document.head.appendChild(j);
+		}
+		const k = document.createElement('style');
+		k.innerHTML = `
 			* {
 				margin: 0;
 				padding: 0;
@@ -1927,34 +1918,27 @@ const BRANTH = {
 				height: 100%;
 			}
 		`;
-		for (const f of Draw.fontDefault) {
-			const l = document.createElement('link');
-			[l.href, l.rel] = [`https://fonts.googleapis.com/css?family=${f}&display=swap`, 'stylesheet'];
-			document.head.appendChild(l);
-		}
-		document.head.appendChild(style);
+		document.head.appendChild(k);
 		document.body.appendChild(CANVAS);
-		if (GLOBAL.debugMode) {
-			if (Room.list.length === 0) {
-				console.log('No room found.');
-			}
-		}
+		if (Room.list.length === 0) if (!GLOBAL.productionMode) console.log(`No room found.\n- Add Room.add(BranthRoom) in your code.`);
 		this.update();
 	},
 	update(t) {
-		Time.update(t);
-		Input.update();
-		Sound.update();
-		Room.update();
-		View.update();
-		Physics.update();
-		OBJ.update();
-		if (Input.keyDown(KeyCode.U)) if (++GLOBAL.debugMode > 3) GLOBAL.debugMode = 0;
-		CTX.clearRect(0, 0, Room.w, Room.h);
-		Room.render();
-		OBJ.render();
-		UI.render();
-		Input.reset();
+		if (Room.current) {
+			Time.update(t);
+			Input.update();
+			Sound.update();
+			Room.current.update();
+			View.update();
+			Physics.update();
+			OBJ.update();
+			if (Input.keyDown(KeyCode.U)) if (++GLOBAL.debugMode > 3) GLOBAL.debugMode = 0;
+			CTX.clearRect(0, 0, Room.w, Room.h);
+			Room.current.render();
+			OBJ.render();
+			Room.current.renderUI();
+			Input.reset();
+		}
 		RAF(BRANTH.update);
 	}
 };

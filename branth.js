@@ -24,6 +24,33 @@ class Vector2 {
 	static get zero() {
 		return new Vector2(0, 0);
 	}
+	static get up() {
+		return new Vector2(0, -1);
+	}
+	static get left() {
+		return new Vector2(-1, 0);
+	}
+	static get down() {
+		return new Vector2(0, 1);
+	}
+	static get right() {
+		return new Vector2(1, 0);
+	}
+}
+
+class Line {
+	constructor(p1, p2) {
+		this.p = [p1, p2];
+	}
+	intersect(line) {
+		const p1 = this.p[0], p2 = this.p[1], p3 = line.p[0], p4 = line.p[1];
+		const s1 = new Vector2(p2.x - p1.x, p2.y - p1.y);
+		const s2 = new Vector2(p4.x - p3.x, p4.y - p3.y);
+		const s = (-s1.y * (p1.x - p3.x) + s1.x * (p1.y - p3.y)) / (-s2.x * s1.y + s1.x * s2.y);
+		const t = (s2.x * (p1.y - p3.y) - s2.y * (p1.x - p3.x)) / (-s2.x * s1.y + s1.x * s2.y);
+		if (s >= 0 && s <= 1 && t >= 0 && t <= 1) return new Vector2(p1.x + (t * s1.x), p1.y + (t * s1.y));
+		return null;
+	}
 }
 
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
@@ -39,7 +66,7 @@ Math.lendirx = (l, d) => l * Math.cos(Math.degtorad(d));
 Math.lendiry = (l, d) => l * Math.sin(Math.degtorad(d));
 Math.lendir = (l, d) => new Vector2(Math.lendirx(l, d), Math.lendiry(l, d));
 Math.linedis = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
-Math.linedir = (x1, y1, x2, y2) => 90 - Math.radtodeg(Math.atan2(x2 - x1, y2 - y1));
+Math.linedir = (x1, y1, x2, y2) => { const d = 90 - Math.radtodeg(Math.atan2(x2 - x1, y2 - y1)); return d < 0? d + 360 : d; }
 Math.pointdis = (p1, p2) => Math.linedis(p1.x, p1.y, p2.x, p2.y);
 Math.pointdir = (p1, p2) => Math.linedir(p1.x, p1.y, p2.x, p2.y);
 
@@ -155,7 +182,7 @@ const Sound = {
 	},
 	get(name) {
 		const s = this.list[this.names.indexOf(name)];
-		if (!s && GLOBAL.debugMode) {
+		if (!s && !GLOBAL.productionMode) {
 			console.log(`Sound not found: ${name}`);
 			return;
 		}
@@ -775,7 +802,7 @@ const Cap = {
 	round: 'round'
 };
 
-const Line = {
+const LineJoin = {
 	miter: 'miter',
 	round: 'round',
 	bevel: 'bevel'
@@ -946,7 +973,7 @@ const Draw = {
 		CTX.lineJoin = line;
 	},
 	resetLineJoin() {
-		CTX.lineJoin = Line.miter;
+		CTX.lineJoin = LineJoin.miter;
 	},
 	setStrokeWeight(n) {
 		CTX.lineWidth = n;

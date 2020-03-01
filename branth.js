@@ -1158,9 +1158,9 @@ const OBJ = {
 		}
 		if (!GLOBAL.productionMode) console.log(`Class not found: ${cls.name}`);
 	},
-	create(cls, x, y) {
+	create(cls, ...payload) {
 		if (this.classes.includes(cls)) {
-			const i = new cls(x || 0, y || 0);
+			const i = new cls(...payload);
 			this.list[this.classes.indexOf(cls)].push(i);
 			i.awake();
 			if (i._active) {

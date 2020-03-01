@@ -38,21 +38,6 @@ class Vector2 {
 	}
 }
 
-class Line {
-	constructor(p1, p2) {
-		this.p = [p1, p2];
-	}
-	intersect(line) {
-		const p1 = this.p[0], p2 = this.p[1], p3 = line.p[0], p4 = line.p[1];
-		const s1 = new Vector2(p2.x - p1.x, p2.y - p1.y);
-		const s2 = new Vector2(p4.x - p3.x, p4.y - p3.y);
-		const s = (-s1.y * (p1.x - p3.x) + s1.x * (p1.y - p3.y)) / (-s2.x * s1.y + s1.x * s2.y);
-		const t = (s2.x * (p1.y - p3.y) - s2.y * (p1.x - p3.x)) / (-s2.x * s1.y + s1.x * s2.y);
-		if (s >= 0 && s <= 1 && t >= 0 && t <= 1) return new Vector2(p1.x + (t * s1.x), p1.y + (t * s1.y));
-		return null;
-	}
-}
-
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
 Math.range = (min, max = 0, t = null) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
 Math.irange = (min, max = 0) => Math.floor(Math.range(min, max));
@@ -247,7 +232,7 @@ const Sound = {
 	update() {
 		for (const s of this.list) {
 			if (s.loop) {
-				if (s.currentTime + Time.deltaTime * 0.005 >= s.duration * s.loopTo) {
+				if (s.currentTime >= s.duration * s.loopTo) {
 					s.currentTime = s.duration * s.loopFrom;
 				}
 			}
@@ -770,6 +755,10 @@ const Font = {
 		this.size = 10;
 		return this.font;
 	},
+	get sm() {
+		this.size = 14;
+		return this.font;
+	},
 	get m() {
 		this.size = 16;
 		return this.font;
@@ -820,7 +809,7 @@ const Primitive = {
 
 const Draw = {
 	fontFamily: '',
-	fontDefault: ['Arvo', 'Fresca', 'Sniglet'],
+	fontDefault: ['Montserrat', 'Arvo', 'Fresca', 'Sniglet'],
 	primitiveType: '',
 	vertices: [],
 	list: [[], []],
@@ -1748,6 +1737,23 @@ const Emitter = {
 				this.setGravity(0, 0);
 				this.setOutline(false);
 				this.setToView(true);
+				break;
+			case 'fire':
+				this.setSpeed(1, 5);
+				this.setSpeedInc(0, 0);
+				this.setSize(10, 20);
+				this.setSizeInc(-0.001, -0.001);
+				this.setDirection(270, 270);
+				this.setDirectionInc(0, 0);
+				this.setRotation(0, 0);
+				this.setRotationInc(0, 0);
+				this.setAlpha(0.15, 0.15);
+				this.setColor(Math.choose(C.red, C.fireBrick));
+				this.setLife(12000, 12000);
+				this.setShape(Shape.circle);
+				this.setGravity(0, 0);
+				this.setOutline(false);
+				this.setToView(false);
 				break;
 		}
 	},

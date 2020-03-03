@@ -4,20 +4,44 @@ class Vector2 {
 		this.y = y;
 	}
 	add(v) {
-		this.x += v.x;
-		this.y += v.y;
+		if (v instanceof Vector2) {
+			this.x += v.x;
+			this.y += v.y;
+		}
+		else {
+			this.x += v;
+			this.y += v;
+		}
 	}
 	subtract(v) {
-		this.x -= v.x;
-		this.y -= v.y;
+		if (v instanceof Vector2) {
+			this.x -= v.x;
+			this.y -= v.y;
+		}
+		else {
+			this.x -= v;
+			this.y -= v;
+		}
 	}
 	multiply(v) {
-		this.x *= v.x;
-		this.y *= v.y;
+		if (v instanceof Vector2) {
+			this.x *= v.x;
+			this.y *= v.y;
+		}
+		else {
+			this.x *= v;
+			this.y *= v;
+		}
 	}
 	divide(v) {
-		this.x /= v.x;
-		this.y /= v.y;
+		if (v instanceof Vector2) {
+			this.x /= v.x;
+			this.y /= v.y;
+		}
+		else {
+			this.x /= v;
+			this.y /= v;
+		}
 	}
 	equal(v) {
 		return this.x === v.x && this.y === v.y;

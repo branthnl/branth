@@ -36,6 +36,9 @@ class Vector2 {
 	static get right() {
 		return new Vector2(1, 0);
 	}
+	static get center() {
+		return new Vector2(0.5, 0.5);
+	}
 }
 
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));

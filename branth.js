@@ -928,8 +928,8 @@ const Draw = {
 		const img = this.getSprite(name)[index];
 		const dw = img.width * xscale;
 		const dh = img.height * yscale;
-		const dx = -dw * img.origin.x;
-		const dy = -dh * img.origin.y;
+		const dx = -dw * (xscale < 0? 1 - img.origin.x : img.origin.x);
+		const dy = -dh * (yscale < 0? 1 - img.origin.y : img.origin.y);
 		CTX.save();
 		CTX.translate(x, y);
 		CTX.scale(Math.sign(xscale), Math.sign(yscale));
@@ -958,10 +958,10 @@ const Draw = {
 				w: s.w * xscale,
 				h: s.h * yscale,
 				get x() {
-					return -this.w * img.origin.x;
+					return -this.w * (xscale < 0? 1 - img.origin.x : img.origin.x);
 				},
 				get y() {
-					return -this.h * img.origin.y;
+					return -this.h * (yscale < 0? 1 - img.origin.y : img.origin.y);
 				}
 			};
 			CTX.save();

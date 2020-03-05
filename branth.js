@@ -272,6 +272,18 @@ const Sound = {
 		}
 		return false;
 	},
+	playOnce(name) {
+		const s = this.get(name);
+		if (GLOBAL.interacted) {
+			if (s) {
+				if (s.currentTime <= 0 || s.paused) {
+					s.currentTime = 0;
+					s.play();
+				}
+			}
+		}
+		else if (!GLOBAL.productionMode) console.log(`Failed to play sound because the user didn't interact with the document first.`);
+	},
 	setVolume(name, n) {
 		const s = this.get(name);
 		if (s) {

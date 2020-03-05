@@ -43,6 +43,13 @@ class Vector2 {
 			this.y /= v;
 		}
 	}
+	distance(v) {
+		return Math.hypot(v.x - this.x, v.y - this.y);
+	}
+	direction(v) {
+		const d = 90 - Math.radtodeg(Math.atan2(v.x - this.x, v.y - this.y));
+		return d < 0? d + 360 : d;
+	}
 	equal(v) {
 		return this.x === v.x && this.y === v.y;
 	}
@@ -78,6 +85,10 @@ class Vector2 {
 	static distance(v1, v2) {
 		return Math.hypot(v2.x - v1.x, v2.y - v1.y);
 	}
+	static direction(v1, v2) {
+		const d = 90 - Math.radtodeg(Math.atan2(v2.x - v1.x, v2.y - v1.y));
+		return d < 0? d + 360 : d;
+	}
 	static copy(v) {
 		return new Vector2(v.x, v.y);
 	}
@@ -101,7 +112,9 @@ class Vector2 {
 	}
 }
 
+Math.hypot = (a, b) => Math.sqrt(a * a + b * b);
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
+Math.map = (a, b, c, d, e) => d + (a - b) / (c - b) * (e - d);
 Math.range = (min, max = 0, t = null) => min + (t || (t === 0? 0 : Math.random())) * (max - min);
 Math.irange = (min, max = 0) => Math.floor(Math.range(min, max));
 Math.choose = (...args) => args[Math.irange(0, args.length)];

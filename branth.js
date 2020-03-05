@@ -870,6 +870,26 @@ const Primitive = {
 	triangleListFill: { name: 'Triangle List Fill', quantity: 3, closePath: false, outline: false }
 };
 
+const BlendModes = {
+	Normal: 'source-over',
+	Add: 'lighter',
+	Hue: 'hue',
+	Color: 'color',
+	Screen: 'screen',
+	Darken: 'darken',
+	Lighten: 'lighten',
+	Overlay: 'overlay',
+	Multiply: 'multiply',
+	HardLight: 'hard-light',
+	SoftLight: 'soft-light',
+	Exclusion: 'exclusion',
+	ColorBurn: 'color-burn',
+	ColorDodge: 'color-dodge',
+	Difference: 'difference',
+	Saturation: 'saturation',
+	Luminosity: 'luminosity'
+};
+
 const Draw = {
 	fontFamily: '',
 	fontDefault: ['Montserrat', 'Arvo', 'Fresca', 'Sniglet'],
@@ -1247,11 +1267,11 @@ const OBJ = {
 		}
 	},
 	clear(cls) {
-		this.list[this.classes.indexOf(cls)] = [];
+		this.list[this.classes.indexOf(cls)].length = 0;
 	},
 	clearAll() {
 		for (let i = this.list.length - 1; i >= 0; i--) {
-			this.list[i] = [];
+			this.list[i].length = 0;
 		}
 		this.ID = 0;
 	},

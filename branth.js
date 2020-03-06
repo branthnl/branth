@@ -917,7 +917,7 @@ const BlendModes = {
 
 const Draw = {
 	fontFamily: '',
-	fontDefault: ['Montserrat', 'Arvo', 'Fresca', 'Sniglet'],
+	fontDefault: ['Montserrat', 'Josefin Sans', 'Arvo', 'Oregano', 'Fresca', 'Sniglet'],
 	primitiveType: '',
 	vertices: [],
 	list: [[], []],

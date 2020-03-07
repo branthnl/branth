@@ -1447,7 +1447,9 @@ const Physics = {
 	},
 	update() {
 		for (let i = this.list.length - 1; i >= 0; i--) {
-			this.list[i].physicsUpdate();
+			if (!this.list[i].freeze) {
+				this.list[i].physicsUpdate();
+			}
 		}
 	}
 };
@@ -1506,6 +1508,7 @@ class PolygonCollider2D extends Collider2D {
 class BranthGameObject extends BranthBehaviour {
 	constructor(x, y) {
 		super(x, y);
+		this.freeze = false;
 		this.xprevious = x;
 		this.yprevious = y;
 		this.spriteName = '';

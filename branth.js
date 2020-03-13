@@ -132,7 +132,6 @@ Math.pointdis = (p1, p2) => Math.linedis(p1.x, p1.y, p2.x, p2.y);
 Math.pointdir = (p1, p2) => Math.linedir(p1.x, p1.y, p2.x, p2.y);
 
 const CANVAS = document.createElement('canvas');
-const CTX = CANVAS.getContext('2d');
 
 const GLOBAL = {
 	key: '_' + Math.random().toString(36).substr(2, 9),
@@ -916,6 +915,7 @@ const BlendModes = {
 };
 
 const Draw = {
+	CTX: CANVAS.getContext('2d'),
 	fontFamily: '',
 	fontDefault: ['Montserrat', 'Josefin Sans', 'Arvo', 'Oregano', 'Fresca', 'Sniglet'],
 	primitiveType: '',
@@ -923,14 +923,24 @@ const Draw = {
 	list: [[], []],
 	names: [[], []],
 	add(origin, name, ...src) {
-		this.list[0].push([]);
-		this.names[0].push(name);
-		for (const s of src) {
-			const img = new Image();
-			img.src = s;
-			img.origin = origin;
-			this.list[0][this.names[0].indexOf(name)].push(img);
+		if (src.length > 0) {
+			this.list[0].push([]);
+			this.names[0].push(name);
+			let img = src[0];
+			if (img instanceof HTMLCanvasElement) {
+				img.origin = origin;
+				this.list[0][this.names[0].indexOf(name)].push(img);
+			}
+			else {
+				for (const s of src) {
+					img = new Image();
+					img.src = s;
+					img.origin = origin;
+					this.list[0][this.names[0].indexOf(name)].push(img);
+				}
+			}
 		}
+		else if (!GLOBAL.productionMode) console.log(`Please pass in the source location or canvas.`);
 	},
 	addStrip(origin, name, src, strip) {
 		const img = new Image();
@@ -955,14 +965,14 @@ const Draw = {
 		const dh = img.height * yscale;
 		const dx = -dw * (xscale < 0? 1 - img.origin.x : img.origin.x);
 		const dy = -dh * (yscale < 0? 1 - img.origin.y : img.origin.y);
-		CTX.save();
-		CTX.translate(x, y);
-		CTX.scale(Math.sign(xscale), Math.sign(yscale));
-		CTX.rotate(rot * Math.PI / 180);
-		CTX.globalAlpha = alpha;
-		CTX.drawImage(img, dx, dy, dw, dh);
-		CTX.globalAlpha = 1;
-		CTX.restore();
+		this.CTX.save();
+		this.CTX.translate(x, y);
+		this.CTX.scale(Math.sign(xscale), Math.sign(yscale));
+		this.CTX.rotate(rot * Math.PI / 180);
+		this.CTX.globalAlpha = alpha;
+		this.CTX.drawImage(img, dx, dy, dw, dh);
+		this.CTX.globalAlpha = 1;
+		this.CTX.restore();
 	},
 	image(name, x, y, xscale = 1, yscale = 1, rot = 0, alpha = 1) {
 		this.sprite(name, 0, x, y, xscale, yscale, rot, alpha);
@@ -970,7 +980,6 @@ const Draw = {
 	strip(name, index, x, y, xscale = 1, yscale = 1, rot = 0, alpha = 1) {
 		const img = this.getStrip(name);
 		if (img) {
-			const sw = img.width / img.strip;
 			const s = {
 				w: img.width / img.strip,
 				h: img.height,
@@ -989,18 +998,24 @@ const Draw = {
 					return -this.h * (yscale < 0? 1 - img.origin.y : img.origin.y);
 				}
 			};
-			CTX.save();
-			CTX.translate(x, y);
-			CTX.scale(Math.sign(xscale), Math.sign(yscale));
-			CTX.rotate(rot * Math.PI / 180);
-			CTX.globalAlpha = alpha;
-			CTX.drawImage(img, s.x, s.y, s.w, s.h, d.x, d.y, d.w, d.h);
-			CTX.globalAlpha = 1;
-			CTX.restore();
+			this.CTX.save();
+			this.CTX.translate(x, y);
+			this.CTX.scale(Math.sign(xscale), Math.sign(yscale));
+			this.CTX.rotate(rot * Math.PI / 180);
+			this.CTX.globalAlpha = alpha;
+			this.CTX.drawImage(img, s.x, s.y, s.w, s.h, d.x, d.y, d.w, d.h);
+			this.CTX.globalAlpha = 1;
+			this.CTX.restore();
 		}
 	},
+	setContext(ctx) {
+		this.CTX = ctx;
+	},
+	resetContext() {
+		this.CTX = CANVAS.getContext('2d');
+	},
 	setFont(s, style = Font.normal) {
-		CTX.font = `${style? `${style} ` : ''}${s} ${this.fontFamily? `${this.fontFamily}, `: ''}${this.fontDefault.join(',')}, serif`;
+		this.CTX.font = `${style? `${style} ` : ''}${s} ${this.fontFamily? `${this.fontFamily}, `: ''}${this.fontDefault.join(',')}, serif`;
 	},
 	setFontStyle(s) {
 		Font.style = s;
@@ -1015,124 +1030,124 @@ const Draw = {
 		this.fontFamily = '';
 	},
 	setAlpha(n) {
-		CTX.globalAlpha = n;
+		this.CTX.globalAlpha = n;
 	},
 	setColor(c) {
-		CTX.fillStyle = c;
-		CTX.strokeStyle = c;
+		this.CTX.fillStyle = c;
+		this.CTX.strokeStyle = c;
 	},
 	setShadow(x, y, b = 0, c = C.black) {
-		CTX.shadowBlur = b;
-		CTX.shadowColor = c;
-		CTX.shadowOffsetX = x;
-		CTX.shadowOffsetY = y;
+		this.CTX.shadowBlur = b;
+		this.CTX.shadowColor = c;
+		this.CTX.shadowOffsetX = x;
+		this.CTX.shadowOffsetY = y;
 	},
 	resetShadow() {
 		this.setShadow(0, 0);
 	},
 	setHAlign(a) {
-		CTX.textAlign = a;
+		this.CTX.textAlign = a;
 	},
 	setVAlign(a) {
-		CTX.textBaseline = a;
+		this.CTX.textBaseline = a;
 	},
 	setHVAlign(h, v) {
-		CTX.textAlign = h;
-		CTX.textBaseline = v;
+		this.CTX.textAlign = h;
+		this.CTX.textBaseline = v;
 	},
 	text(x, y, text) {
 		let [t, baseline] = [('' + text).split('\n'), 0];
-		switch (CTX.textBaseline) {
+		switch (this.CTX.textBaseline) {
 			case Align.m: baseline = -Font.size * (t.length - 1) * 0.5; break;
 			case Align.b: baseline = -Font.size * (t.length - 1); break;
 		}
 		for (let i = 0; i < t.length; i++) {
-			CTX.fillText(t[i], x, y + baseline + Font.size * i);
+			this.CTX.fillText(t[i], x, y + baseline + Font.size * i);
 		}
 	},
 	textWidth(text) {
-		return Math.max(...('' + text).split('\n').map(v => CTX.measureText(v).width));
+		return Math.max(...('' + text).split('\n').map(v => this.CTX.measureText(v).width));
 	},
 	textHeight(text) {
 		return Font.size * ('' + text).split('\n').length;
 	},
 	draw(outline = false) {
-		if (outline) CTX.stroke();
-		else CTX.fill();
+		if (outline) this.CTX.stroke();
+		else this.CTX.fill();
 	},
 	setLineCap(cap) {
-		CTX.lineCap = cap;
+		this.CTX.lineCap = cap;
 	},
 	resetLineCap() {
-		CTX.lineCap = LineCap.butt;
+		this.CTX.lineCap = LineCap.butt;
 	},
 	setLineJoin(join) {
-		CTX.lineJoin = join;
+		this.CTX.lineJoin = join;
 	},
 	resetLineJoin() {
-		CTX.lineJoin = LineJoin.miter;
+		this.CTX.lineJoin = LineJoin.miter;
 	},
 	setStrokeWeight(n) {
-		CTX.lineWidth = n;
+		this.CTX.lineWidth = n;
 	},
 	resetStrokeWeight() {
-		CTX.lineWidth = 1;
+		this.CTX.lineWidth = 1;
 	},
 	arc(x, y, r, startAngle, endAngle, outline = false) {
-		CTX.beginPath();
-		CTX.arc(x, y, r, Math.degtorad(startAngle), Math.degtorad(endAngle));
+		this.CTX.beginPath();
+		this.CTX.arc(x, y, r, Math.degtorad(startAngle), Math.degtorad(endAngle));
 		this.draw(outline);
 	},
 	line(x1, y1, x2, y2) {
-		CTX.beginPath();
-		CTX.moveTo(x1, y1);
-		CTX.lineTo(x2, y2);
-		CTX.stroke();
+		this.CTX.beginPath();
+		this.CTX.moveTo(x1, y1);
+		this.CTX.lineTo(x2, y2);
+		this.CTX.stroke();
 	},
 	plus(x, y, r) {
-		CTX.beginPath();
-		CTX.moveTo(x, y - r);
-		CTX.lineTo(x, y + r);
-		CTX.moveTo(x - r, y);
-		CTX.lineTo(x + r, y);
-		CTX.stroke();
+		this.CTX.beginPath();
+		this.CTX.moveTo(x, y - r);
+		this.CTX.lineTo(x, y + r);
+		this.CTX.moveTo(x - r, y);
+		this.CTX.lineTo(x + r, y);
+		this.CTX.stroke();
 	},
 	rect(x, y, w, h, outline = false) {
-		CTX.beginPath();
-		CTX.rect(x, y, w, h);
+		this.CTX.beginPath();
+		this.CTX.rect(x, y, w, h);
 		this.draw(outline);
 	},
 	circle(x, y, r, outline = false) {
-		CTX.beginPath();
-		CTX.arc(x, y, Math.abs(r), 0, 2 * Math.PI);
+		this.CTX.beginPath();
+		this.CTX.arc(x, y, Math.abs(r), 0, 2 * Math.PI);
 		this.draw(outline);
 	},
 	roundRect(x, y, w, h, r, outline = false) {
 		if (w < 0) { x += w; w = -w; }
 		if (h < 0) { y += h; h = -h; }
 		r = Math.clamp(r, 0, Math.min(w * 0.5, h * 0.5)) || 0;
-		CTX.beginPath();
-		CTX.moveTo(x, y + r);
-		CTX.quadraticCurveTo(x, y, x + r, y);
-		CTX.lineTo(x + w - r, y);
-		CTX.quadraticCurveTo(x + w, y, x + w, y + r);
-		CTX.lineTo(x + w, y + h - r);
-		CTX.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-		CTX.lineTo(x + r, y + h);
-		CTX.quadraticCurveTo(x, y + h, x, y + h - r);
-		CTX.closePath();
+		this.CTX.beginPath();
+		this.CTX.moveTo(x, y + r);
+		this.CTX.quadraticCurveTo(x, y, x + r, y);
+		this.CTX.lineTo(x + w - r, y);
+		this.CTX.quadraticCurveTo(x + w, y, x + w, y + r);
+		this.CTX.lineTo(x + w, y + h - r);
+		this.CTX.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+		this.CTX.lineTo(x + r, y + h);
+		this.CTX.quadraticCurveTo(x, y + h, x, y + h - r);
+		this.CTX.closePath();
 		this.draw(outline);
 	},
 	pointLine(p1, p2) {
 		this.line(p1.x, p1.y, p2.x, p2.y);
 	},
 	pointRect(p1, p2, p3, p4, outline = false) {
-		CTX.beginPath();
-		CTX.moveTo(p1.x, p1.y);
-		CTX.lineTo(p2.x, p2.y);
-		CTX.lineTo(p3.x, p3.y);
-		CTX.lineTo(p4.x, p4.y);
-		CTX.closePath();
+		this.CTX.beginPath();
+		this.CTX.moveTo(p1.x, p1.y);
+		this.CTX.lineTo(p2.x, p2.y);
+		this.CTX.lineTo(p3.x, p3.y);
+		this.CTX.lineTo(p4.x, p4.y);
+		this.CTX.closePath();
 		this.draw(outline);
 	},
 	primitiveBegin() {
@@ -1145,45 +1160,45 @@ const Draw = {
 		this.primitiveType = primitiveType || Primitive.fill;
 		const [q, c, o] = [this.primitiveType.quantity, this.primitiveType.closePath, this.primitiveType.outline];
 		if (q === 1) this.setLineCap(LineCap.round);
-		CTX.beginPath();
+		this.CTX.beginPath();
 		for (let i = 0; i < this.vertices.length; i++) {
 			const v = this.vertices[i];
 			if (q === 1) {
 				this.draw(o);
-				CTX.beginPath();
-				CTX.moveTo(v.x, v.y);
-				CTX.lineTo(v.x, v.y);
+				this.CTX.beginPath();
+				this.CTX.moveTo(v.x, v.y);
+				this.CTX.lineTo(v.x, v.y);
 			}
 			else if (i === 0 || (q > 1 && i % q === 0)) {
-				if (c) CTX.closePath();
+				if (c) this.CTX.closePath();
 				this.draw(o);
-				CTX.beginPath();
-				CTX.moveTo(v.x, v.y);
+				this.CTX.beginPath();
+				this.CTX.moveTo(v.x, v.y);
 			}
-			else CTX.lineTo(v.x, v.y);
+			else this.CTX.lineTo(v.x, v.y);
 		}
-		if (c) CTX.closePath();
+		if (c) this.CTX.closePath();
 		this.draw(o);
 		this.resetLineCap();
 	},
 	ellipseRotated(x, y, w, h, angle, outline = false) {
-		CTX.beginPath();
-		CTX.ellipse(x, y, Math.abs(w), Math.abs(h), angle, 0, 2 * Math.PI);
-		CTX.closePath();
+		this.CTX.beginPath();
+		this.CTX.ellipse(x, y, Math.abs(w), Math.abs(h), angle, 0, 2 * Math.PI);
+		this.CTX.closePath();
 		this.draw(outline);
 	},
 	ellipse(x, y, w, h, outline = false) {
 		this.ellipseRotated(x, y, w, h, 0, outline);
 	},
 	starExtRotated(x, y, pts, inner, outer, angle, outline = false) {
-		CTX.beginPath();
+		this.CTX.beginPath();
 		for (let i = 0; i <= 2 * pts; i++) {
 			const [r, a] = [(i % 2 === 0)? inner : outer, Math.PI * i / pts - Math.degtorad(angle)];
 			const p = new Vector2(x + r * Math.sin(a), y + r * Math.cos(a));
-			if (i === 0) CTX.moveTo(p.x, p.y);
-			else CTX.lineTo(p.x, p.y);
+			if (i === 0) this.CTX.moveTo(p.x, p.y);
+			else this.CTX.lineTo(p.x, p.y);
 		}
-		CTX.closePath();
+		this.CTX.closePath();
 		this.draw(outline);
 	},
 	starRotated(x, y, r, angle, outline = false) {
@@ -1196,12 +1211,12 @@ const Draw = {
 		this.starRotated(x, y, r, 0, outline);
 	},
 	transform(x, y, xscale, yscale, angle, e) {
-		CTX.save();
-		CTX.translate(x, y);
-		CTX.rotate(Math.degtorad(angle));
-		CTX.scale(xscale, yscale);
+		this.CTX.save();
+		this.CTX.translate(x, y);
+		this.CTX.rotate(Math.degtorad(angle));
+		this.CTX.scale(xscale, yscale);
 		e();
-		CTX.restore();
+		this.CTX.restore();
 	},
 	textTransformed(x, y, text, xscale, yscale, angle) {
 		this.transform(x, y, xscale, yscale, angle, () => this.text(0, 0, text));
@@ -1952,8 +1967,8 @@ const Room = {
 		this.h = b.height;
 		CANVAS.width = this.w * s;
 		CANVAS.height = this.h * s;
-		CTX.resetTransform();
-		CTX.scale(s, s);
+		Draw.CTX.resetTransform();
+		Draw.CTX.scale(s, s);
 	}
 };
 
@@ -2077,7 +2092,7 @@ const BRANTH = {
 			Physics.update();
 			OBJ.update();
 			if (Input.keyDown(KeyCode.U)) if (++GLOBAL.debugMode > 3) GLOBAL.debugMode = 0;
-			CTX.clearRect(0, 0, Room.w, Room.h);
+			Draw.CTX.clearRect(0, 0, Room.w, Room.h);
 			Room.current.render();
 			OBJ.render();
 			Room.current.renderUI();

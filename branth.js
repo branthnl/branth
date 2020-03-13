@@ -917,7 +917,7 @@ const BlendModes = {
 const Draw = {
 	CTX: CANVAS.getContext('2d'),
 	fontFamily: '',
-	fontDefault: ['Montserrat', 'Josefin Sans', 'Arvo', 'Oregano', 'Fresca', 'Sniglet'],
+	fontDefault: ['Maven Pro', 'Montserrat', 'Josefin Sans', 'Arvo', 'Oregano', 'Fresca', 'Sniglet'],
 	primitiveType: '',
 	vertices: [],
 	list: [[], []],

@@ -2107,6 +2107,7 @@ const BRANTH = {
 		document.head.appendChild(k);
 		document.body.appendChild(CANVAS);
 		if (Room.list.length === 0) if (!GLOBAL.productionMode) console.log(`No room found.\n- Add Room.add(BranthRoom) in your code.`);
+		Room.resize();
 		this.update();
 	},
 	update(t) {

@@ -2030,6 +2030,33 @@ const View = {
 	}
 };
 
+class Transition extends BranthBehaviour {
+	constructor(color = C.white, interval = 200, delay = 100) {
+		super(0, 0);
+		this.color = color;
+		this.interval = interval;
+		this.alarm[0] = this.interval + delay;
+		this.visible = false;
+	}
+	render() {
+		Draw.setAlpha(Math.clamp(this.alarm[0] / this.interval, 0, 1));
+		Draw.setColor(this.color);
+		Draw.rect(0, 0, Room.w, Room.h);
+		Draw.setAlpha(1);
+	}
+	alarm0() {
+		OBJ.destroy(this.id);
+	}
+	static Render() {
+		const o = OBJ.take(Transition);
+		for (let i = o.length - 1; i >= 0; i--) {
+			o[i].render();
+		}
+	}
+}
+
+OBJ.add(Transition);
+
 const RAF = window.requestAnimationFrame
 	|| window.msRequestAnimationFrame
 	|| window.mozRequestAnimationFrame

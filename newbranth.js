@@ -1,6 +1,4 @@
-const RAF = function(callback) {
-	return setTimeout(callback, 1000/60);
-}
+const RAF = requestAnimatioFrame;
 const BRANTH = {};
 
 BRANTH.Time = {
@@ -32,11 +30,11 @@ BRANTH.start = () => {
 	Menu.render();
 	Menu.renderUI();
 	BRANTH.Time.start();
-	BRANTH.render();
+	BRANTH.render(0);
 };
 
 BRANTH.render = (t) => {
-	BRANTH.Time.update();
+	BRANTH.Time.update(t);
 	Menu.update();
 	RAF(BRANTH.render);
 };

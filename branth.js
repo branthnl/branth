@@ -119,6 +119,7 @@ Math.range = (min, max = 0, t = null) => min + (t || (t === 0? 0 : Math.random()
 Math.irange = (min, max = 0) => Math.floor(Math.range(min, max));
 Math.choose = (...args) => args[Math.irange(0, args.length)];
 Math.pick = (arr) => arr[Math.irange(arr.length)];
+Math.randpop = (i) => i.splice(Math.irange(i.length), 1)[0];
 Math.randneg = (t = 0.5) => Math.random() < t? -1 : 1;
 Math.randbool = (t = 0.5) => Math.random() < t;
 Math.degtorad = (d) => d * Math.PI / 180;

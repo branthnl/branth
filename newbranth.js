@@ -51,7 +51,7 @@ class Branth {
 	start(name) {
 		this.Room.start(name);
 		if (this.Room.current) {
-			this.Time.startTime = window.performance.
+			this.Time.startTime = window.performance.now();
 			Branth.render(0, this.name);
 		}
 	}

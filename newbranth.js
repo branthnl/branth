@@ -5,7 +5,56 @@ class Vector2 {
 	}
 }
 
-const BRANTH = {};
+class BranthBehaviour {
+	start() {}
+	render() {}
+}
+
+class BranthObject extends BranthBehaviour {
+	constructor(x, y) {
+		this.id = Branth.OBJ.ID++;
+		this.depth = 0;
+		this._active = true;
+		this.visible = true;
+		this.xstart = x;
+		this.ystart = y;
+		this.x = x;
+		this.y = y;
+	}
+	get active() {
+		return this._active;
+	}
+	set active(val) {
+		if (!this._active && val) {
+			this.start();
+			this.afterStart();
+		}
+		this._active = val;
+	}
+}
+
+const Branth = {};
+
+Branth.OBJ = {
+	list: {},
+	add(name) {
+		this.list[name] = [];
+	},
+	create(name, i) {
+		i.start();
+		this.list[name].push(i);
+		return i;
+	},
+	destroy(name, id) {
+		for (let i = this.list[name].length - 1; i >= 0; i--) {
+			if (this.list[name].id === id) {
+				return this.list[name].splice(i, 1)[0];
+			}
+		}
+	},
+	renderAll() {
+	}
+};
 
 Math.hypot = (a, b) => Math.sqrt(a*a + b*b);
 Math.clamp = (a, b, c) => Math.min(c, Math.max(b, a));
@@ -26,12 +75,12 @@ Math.linedir = (x1, y1, x2, y2) => { const d = 90 - Math.atan2(x2-x1, y2-y1) * M
 Math.pointdis = (p1, p2) => Math.linedis(p1.x, p1.y, p2.x, p2.y);
 Math.pointdir = (p1, p2) => Math.linedir(p1.x, p1.y, p2.x, p2.y);
 
-BRANTH.Canvas = document.createElement("canvas");
-BRANTH.Ctx = BRANTH.Canvas.getContext("2d");
+Branth.Canvas = document.createElement("canvas");
+Branth.Ctx = Branth.Canvas.getContext("2d");
 
-BRANTH.Global = {};
+Branth.Global = {};
 
-BRANTH.Time = {
+Branth.Time = {
 	time: 0,
 	lastTime: 0,
 	deltaTime: 0,
@@ -42,7 +91,7 @@ BRANTH.Time = {
 	}
 };
 
-BRANTH.Room = {
+Branth.Room = {
 	scale: 1,
 	w: 0,
 	h: 0,
@@ -72,36 +121,36 @@ BRANTH.Room = {
 		this.current.start();
 	},
 	clear() {
-		BRANTH.Ctx.clearRect(0, 0, this.w, this.h);
+		Branth.Ctx.clearRect(0, 0, this.w, this.h);
 	},
 	resize(options={}) {
 		if (options.scale) this.scale = options.scale;
-		const b = BRANTH.Canvas.getBoundingClientRect();
+		const b = Branth.Canvas.getBoundingClientRect();
 		this.w = options.w || b.width;
 		this.h = options.h || b.height;
 		this.mid.w = this.w * 0.5;
 		this.mid.h = this.h * 0.5;
-		BRANTH.Canvas.width = this.w * this.scale;
-		BRANTH.Canvas.height = this.h * this.scale;
-		BRANTH.Ctx.resetTransform();
-		BRANTH.Ctx.scale(this.scale, this.scale);
+		Branth.Canvas.width = this.w * this.scale;
+		Branth.Canvas.height = this.h * this.scale;
+		Branth.Ctx.resetTransform();
+		Branth.Ctx.scale(this.scale, this.scale);
 	}
 };
 
-BRANTH.KeyCode = {};
+Branth.KeyCode = {};
 
-BRANTH.Mouse = {};
+Branth.Mouse = {};
 
-BRANTH.Input = {
+Branth.Input = {
 	update() {},
 	reset() {}
 };
 
-BRANTH.Sound = {
+Branth.Sound = {
 	update() {}
 };
 
-BRANTH.C = {
+Branth.C = {
 	aliceBlue: "#f0f8ff",
 	antiqueWhite: "#faebd7",
 	aqua: "#00ffff",
@@ -257,7 +306,7 @@ BRANTH.C = {
 	}
 };
 
-BRANTH.Font = {
+Branth.Font = {
 	H1: 48,
 	H2: 36,
 	H3: 24,
@@ -269,19 +318,19 @@ BRANTH.Font = {
 	Italic: "italic ",
 	BoldItalic: "bold italic ",
 	FamilyDefault: "Maven Pro, sans-serif",
-	generate(size, style=BRANTH.Font.Regular, family=BRANTH.Font.FamilyDefault) {
+	generate(size, style=Branth.Font.Regular, family=Branth.Font.FamilyDefault) {
 		return `${style}${size}px ${family}, serif`;
 	}
 };
 
-BRANTH.Font.xxl = BRANTH.Font.generate(BRANTH.Font.H1);
-BRANTH.Font.xl = BRANTH.Font.generate(BRANTH.Font.H2);
-BRANTH.Font.l = BRANTH.Font.generate(BRANTH.Font.H3);
-BRANTH.Font.m = BRANTH.Font.generate(BRANTH.Font.H4);
-BRANTH.Font.sm = BRANTH.Font.generate(BRANTH.Font.H5);
-BRANTH.Font.s = BRANTH.Font.generate(BRANTH.Font.H6);
+Branth.Font.xxl = Branth.Font.generate(Branth.Font.H1);
+Branth.Font.xl = Branth.Font.generate(Branth.Font.H2);
+Branth.Font.l = Branth.Font.generate(Branth.Font.H3);
+Branth.Font.m = Branth.Font.generate(Branth.Font.H4);
+Branth.Font.sm = Branth.Font.generate(Branth.Font.H5);
+Branth.Font.s = Branth.Font.generate(Branth.Font.H6);
 
-BRANTH.Align = {
+Branth.Align = {
 	l: "left",
 	r: "right",
 	c: "center",
@@ -290,18 +339,18 @@ BRANTH.Align = {
 	m: "middle"
 };
 
-BRANTH.LineCap = {
+Branth.LineCap = {
 	Butt: "butt",
 	Round: "round"
 };
 
-BRANTH.LineJoin = {
+Branth.LineJoin = {
 	Miter: "miter",
 	Round: "round",
 	Bevel: "bevel"
 };
 
-BRANTH.Primitive = {
+Branth.Primitive = {
 	Fill: { name: "Fill", quantity: 0, closePath: true, outline: false },
 	Line: { name: "Line", quantity: 0, closePath: false, outline: true },
 	Stroke: { name: "Stroke", quantity: 0, closePath: true, outline: true },
@@ -311,8 +360,8 @@ BRANTH.Primitive = {
 	TriangleListFill: { name: "Triangle List Fill", quantity: 3, closePath: false, outline: false }
 };
 
-BRANTH.Draw = {
-	ctx: BRANTH.Ctx,
+Branth.Draw = {
+	ctx: Branth.Ctx,
 	images: {},
 	sprites: {},
 	strips: {},
@@ -320,7 +369,7 @@ BRANTH.Draw = {
 		this.ctx = ctx;
 	},
 	resetCtx() {
-		this.ctx = BRANTH.Ctx;
+		this.ctx = Branth.Ctx;
 	},
 	setFont(font) {
 		this.ctx.font = font;
@@ -367,72 +416,74 @@ BRANTH.Draw = {
 	}
 };
 
-BRANTH.OBJ = {};
+Branth.Emitter = {};
 
-BRANTH.Particle = {};
-
-BRANTH.View = {};
-
-BRANTH.start = (w=0, h=0, options={}) => {
+Branth.start = (options={}) => {
 	const canvasID = options.canvasID? options.canvasID : "branthMainCanvas";
 	const style = document.createElement("style");
 	style.innerHTML = `
-		* {
+		${options.removeAllGap?
+		`* {
 			margin: 0;
 			padding: 0;
-		}
+		}`
+		: ""}
 		${options.parent? options.parent : "body"} {
-			width: ${w? `${w}px` : "100vw"};
-			height: ${h? `${h}px` : "100vh"};
+			width: ${options.w? `${options.w}px` : "100vw"};
+			height: ${options.h? `${options.h}px` : "100vh"};
 			overflow: hidden;
 			position: absolute;
-			top: ${options.VAlign? "50%" : "0"};
-			left: ${options.HAlign? "50%" : "0"};
-			transform: translate(${options.HAlign? "-50%" : "0"}, ${options.VAlign? "-50%" : "0"});
+			top: ${options.align * 100}%;
+			left: ${options.align * 100}%;
+			transform: translate(-${options.align * 100}%, -${options.align * 100}%);
 		}
 		#${canvasID} {
 			width: 100%;
 			height: 100%;
+			border-radius: ${options.borderRadius}px;
 		}
 	`;
-	BRANTH.Canvas.id = canvasID;
-	BRANTH.Draw.setHVAlign(BRANTH.Align.l, BRANTH.Align.t);
+	if (options.color) Branth.Canvas.style.backgroundColor = options.color;
+	else Branth.Canvas.style.backgroundImage = "radial-gradient(darkorchid 33%, darkslateblue)";
+	Branth.Canvas.id = canvasID;
+	Branth.Draw.setHVAlign(Branth.Align.l, Branth.Align.t);
 	document.head.appendChild(style);
-	document.body.appendChild(BRANTH.Canvas);
+	document.body.appendChild(Branth.Canvas);
+	// TODO ^ Append child on parent
 	style.onload = () => {
-		BRANTH.Room.resize();
-		BRANTH.Room.start("Load");
-		BRANTH.render(0);
+		Branth.Room.resize();
+		Branth.Room.start("Load");
+		Branth.render(0);
 	};
 };
 
-BRANTH.render = (t) => {
-	BRANTH.Time.update(t);
-	BRANTH.Input.update();
-	BRANTH.Sound.update();
-	BRANTH.Room.clear();
-	BRANTH.Room.current.render();
-	BRANTH.Input.reset();
-	window.requestAnimationFrame(BRANTH.render);
+Branth.render = (t) => {
+	Branth.Time.update(t);
+	Branth.Input.update();
+	Branth.Sound.update();
+	Branth.Room.clear();
+	Branth.Room.current.render();
+	Branth.Input.reset();
+	window.requestAnimationFrame(Branth.render);
 };
 
-BRANTH.onLoadStart = () => {};
-BRANTH.onLoadRender = () => {};
-BRANTH.onLoadFinish = () => {};
+Branth.onLoadStart = () => {};
+Branth.onLoadRender = () => {};
+Branth.onLoadFinish = () => {};
 
-BRANTH.Loader = {
+Branth.Loader = {
 	loaded: false,
 	loadAmount: 0,
 	loadedCount: 0,
 	get loadProgress() {
-		return BRANTH.Loader.loadedCount / Math.max(1, BRANTH.Loader.loadAmount);
+		return Branth.Loader.loadedCount / Math.max(1, Branth.Loader.loadAmount);
 	},
 	loadImage(origin, name, src) {
 		const img = new Image();
 		img.src = src;
-		BRANTH.Draw.addImage(origin, name, img);
-		BRANTH.Loader.loadAmount++;
-		img.onload = () => { BRANTH.Loader.loadedCount++; };
+		Branth.Draw.addImage(origin, name, img);
+		Branth.Loader.loadAmount++;
+		img.onload = () => { Branth.Loader.loadedCount++; };
 	},
 	loadSprite(origin, name, srcArray) {
 		const imgArray = [];
@@ -440,25 +491,25 @@ BRANTH.Loader = {
 			const img = new Image();
 			img.src = src;
 			imgArray.push(img);
-			BRANTH.Loader.loadAmount++;
-			img.onload = () => { BRANTH.Loader.loadedCount++; };
+			Branth.Loader.loadAmount++;
+			img.onload = () => { Branth.Loader.loadedCount++; };
 		}
-		BRANTH.Draw.addSprite(origin, name, imgArray);
+		Branth.Draw.addSprite(origin, name, imgArray);
 	},
 	loadStrip(origin, name, src, strip) {}
 };
 
-BRANTH.Load = BRANTH.Room.add("Load");
-BRANTH.Load.start = () => { BRANTH.onLoadStart(); };
-BRANTH.Load.render = () => {
-	if (!BRANTH.Loader.loaded) {
-		if (BRANTH.Loader.loadedCount === BRANTH.Loader.loadAmount) {
-			BRANTH.onLoadFinish();
-			BRANTH.Loader.loaded = true;
+Branth.Load = Branth.Room.add("Load");
+Branth.Load.start = () => { Branth.onLoadStart(); };
+Branth.Load.render = () => {
+	if (!Branth.Loader.loaded) {
+		if (Branth.Loader.loadedCount === Branth.Loader.loadAmount) {
+			Branth.onLoadFinish();
+			Branth.Loader.loaded = true;
 		}
 	}
-	if (BRANTH.Room.current.name === "Load") {
-		BRANTH.onLoadRender();
+	if (Branth.Room.current.name === "Load") {
+		Branth.onLoadRender();
 	}
 };
-delete BRANTH.Load;
+delete Branth.Load;

@@ -424,7 +424,7 @@ BRANTH.Loader = {
 	loaded: false,
 	loadAmount: 0,
 	loadedCount: 0,
-	loadProgress() {
+	get loadProgress() {
 		return BRANTH.Loader.loadedCount / Math.max(1, BRANTH.Loader.loadAmount);
 	},
 	loadImage(origin, name, src) {
@@ -458,7 +458,6 @@ BRANTH.Load.render = () => {
 		}
 	}
 	if (BRANTH.Room.current.name === "Load") {
-		// console.log('true');
 		BRANTH.onLoadRender();
 	}
 };

@@ -1,3 +1,10 @@
+class Vector2 {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+}
+
 const BRANTH = {};
 
 Math.hypot = (a, b) => Math.sqrt(a*a + b*b);
@@ -11,11 +18,15 @@ Math.randneg = (a=0.5) => Math.random() < a? 1 : -1;
 Math.randbool = (a=0.5) => Math.random() < a;
 Math.degtorad = Math.PI / 180;
 Math.radtodeg = 180 / Math.PI;
-Math.lendirx = (l, d) => a * Math.cos(b * Math.degtorad);
-Math.lendiry = (l, d) => a * Math.sin(b * Math.degtorad);
-Math.lendir = (l, d) => new Vector2(Math.lendirx(a, b), Math.lendiry(a, b));
+Math.lendirx = (l, d) => l * Math.cos(d * Math.degtorad);
+Math.lendiry = (l, d) => l * Math.sin(d * Math.degtorad);
+Math.lendir = (l, d) => new Vector2(Math.lendirx(l, d), Math.lendiry(l, d));
 Math.linedis = (x1, y1, x2, y2) => Math.hypot(x2-x1, y2-y1);
-Math.linedir = (x1, y1, x2, y2) => Math.atan2(x2-x1, y2-y1);
+Math.linedir = (x1, y1, x2, y2) => { const d = 90 - Math.atan2(x2-x1, y2-y1) * Math.radtodeg; return d < 0? d + 360 : d; };
+Math.pointdis = (p1, p2) => Math.linedis(p1.x, p1.y, p2.x, p2.y);
+Math.pointdir = (p1, p2) => Math.linedir(p1.x, p1.y, p2.x, p2.y);
+
+BRANTH.Global = {};
 
 BRANTH.Time = {
 	time: 0,
@@ -27,6 +38,21 @@ BRANTH.Time = {
 		this.deltaTime = this.time - this.lastTime;
 	}
 };
+
+BRANTH.Sound = {};
+BRANTH.KeyCode = {};
+BRANTH.Mouse = {};
+BRANTH.Input = {};
+BRANTH.C = {};
+BRANTH.Font = {};
+BRANTH.Align = {};
+BRANTH.LineCap = {};
+BRANTH.LineJoin = {};
+BRANTH.Primitive = {};
+BRANTH.Canvas = document.createElement("canvas");
+BRANTH.Draw = {};
+BRANTH.OBJ = {};
+BRANTH.Particle = {};
 
 BRANTH.Room = {
 	w: 0,
@@ -44,3 +70,5 @@ BRANTH.Room = {
 		};
 	}
 };
+
+BRANTH.View = {};

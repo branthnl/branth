@@ -298,18 +298,18 @@ Branth.MouseButton = {
 
 Branth.InputKey = function(keyCode) {
 	this.keyCode = keyCode;
-	this.hold = false;
+	this.held = false;
 	this.pressed = false;
 	this.released = false;
 };
 
 Branth.InputKey.prototype.up = function() {
-	this.hold = false;
+	this.held = false;
 	this.released = true;
 };
 
 Branth.InputKey.prototype.down = function() {
-	this.hold = true;
+	this.held = true;
 	this.pressed = true;
 };
 
@@ -333,10 +333,10 @@ Branth.Input = {
 	mousePosition: new Vector2(0, 0),
 	touches: [],
 	setup() {
-		for (const i of Object.values(Branth.KeyCode)) {
+		for (let i = 0; i < 256; i++) {
 			this.Key[i] = new Branth.InputKey(i);
 		}
-		for (const i of Object.values(Branth.MouseButton)) {
+		for (let i = 0; i < 3; i++) {
 			this.Mouse[i] = new Branth.InputKey(i);
 			this.Mouse[i].doubleStep = 0;
 			this.Mouse[i].doublePressed = false;
@@ -351,7 +351,7 @@ Branth.Input = {
 		}
 	},
 	update() {
-		for (const i of Object.keys(this.Mouse)) {
+		for (let i = 0; i < 3; i++) {
 			const j = this.Mouse[i];
 			j.doublePressed = false;
 			if (j.doubleStep > 0) {
@@ -365,13 +365,13 @@ Branth.Input = {
 		}
 	},
 	reset() {
-		for (const i of Object.keys(this.Key)) {
+		for (let i = 0; i < 256; i++) {
 			this.Key[i].reset();
 		}
-		for (let i = this.Mouse.length - 1; i >= 0; i--) {
+		for (let i = 0; i < 3; i++) {
 			this.Mouse[i].reset();
 		}
-		for (let i = this.Touch.length - 1; i >= 0; i--) {
+		for (let i = 0; i < 10; i++) {
 			this.Touch[i].reset();
 		}
 	},
@@ -382,7 +382,7 @@ Branth.Input = {
 		return this.Key[keyCode].pressed;
 	},
 	keyHold(keyCode) {
-		return this.Key[keyCode].hold;
+		return this.Key[keyCode].held;
 	},
 	mouseUp(button) {
 		return this.Mouse[button].released;
@@ -391,7 +391,7 @@ Branth.Input = {
 		return this.Mouse[button].pressed;
 	},
 	mouseHold(button) {
-		return this.Mouse[button].hold;
+		return this.Mouse[button].held;
 	},
 	mouseDouble(button) {
 		return this.Mouse[button].doublePressed;
@@ -403,21 +403,15 @@ Branth.Input = {
 		return this.Touch[id].pressed;
 	},
 	touchHold(id) {
-		return this.Touch[id].hold;
+		return this.Touch[id].held;
 	},
 	eventKeyUp(e) {
-		try {
-			this.Key[e.keyCode].up();
-		}
-		catch {}
+		this.Key[e.keyCode].up();
 	},
 	eventKeyDown(e) {
 		if (this.preventedKeys.includes(e.keyCode)) e.preventDefault();
-		try {
-			const i = this.Key[e.keyCode];
-			if (!i.hold) i.down();
-		}
-		catch {}
+		const i = this.Key[e.keyCode];
+		if (!i.held) i.down();
 	},
 	updateMousePosition(e) {
 		const b = Branth.Canvas.getBoundingClientRect();
@@ -430,7 +424,7 @@ Branth.Input = {
 	},
 	eventMouseDown(e) {
 		const i = this.Mouse[e.button];
-		if (!i.hold) {
+		if (!i.held) {
 			i.down();
 			this.updateMousePosition(e);
 		}
@@ -470,7 +464,7 @@ Branth.Input = {
 	eventTouchStart(e) {
 		for (const i of e.changedTouches) {
 			const j = this.convertTouch(i);
-			if (!this.Touch[j.id].hold) {
+			if (!this.Touch[j.id].held) {
 				this.Touch[j.id].down();
 				this.Touch[j.id].setPosition(j.x, j.y);
 			}

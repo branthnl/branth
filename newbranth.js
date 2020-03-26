@@ -137,7 +137,296 @@ Branth.Room = {
 	}
 };
 
+Branth.KeyCode = {
+	Backspace: 8,
+	Tab: 9,
+	Enter: 13,
+	Shift: 16,
+	Ctrl: 17,
+	Alt: 18,
+	Pause: 19,
+	Break: 19,
+	CapsLock: 20,
+	Escape: 27,
+	PageUp: 33,
+	Space: 32,
+	PageDown: 34,
+	End: 35,
+	Home: 36,
+	Left: 37,
+	Up: 38,
+	Right: 39,
+	Down: 40,
+	PrintScreen: 44,
+	Insert: 45,
+	Delete: 46,
+	Digit0: 48,
+	Digit1: 49,
+	Digit2: 50,
+	Digit3: 51,
+	Digit4: 52,
+	Digit5: 53,
+	Digit6: 54,
+	Digit7: 55,
+	Digit8: 56,
+	Digit9: 57,
+	MozSemicolon: 59,
+	MozEqual: 61,
+	A: 65,
+	B: 66,
+	C: 67,
+	D: 68,
+	E: 69,
+	F: 70,
+	G: 71,
+	H: 72,
+	I: 73,
+	J: 74,
+	K: 75,
+	L: 76,
+	M: 77,
+	N: 78,
+	O: 79,
+	P: 80,
+	Q: 81,
+	R: 82,
+	S: 83,
+	T: 84,
+	U: 85,
+	V: 86,
+	W: 87,
+	X: 88,
+	Y: 89,
+	Z: 90,
+	LeftWindowKey: 91,
+	RightWindowKey: 92,
+	SelectKey: 93,
+	Numpad0: 96,
+	Numpad1: 97,
+	Numpad2: 98,
+	Numpad3: 99,
+	Numpad4: 100,
+	Numpad5: 101,
+	Numpad6: 102,
+	Numpad7: 103,
+	Numpad8: 104,
+	Numpad9: 105,
+	NumpadMultiply: 106,
+	NumpadAdd: 107,
+	NumpadSubtract: 109,
+	NumpadDecimal: 110,
+	NumpadDivide: 111,
+	F1: 112,
+	F2: 113,
+	F3: 114,
+	F4: 115,
+	F5: 116,
+	F6: 117,
+	F7: 118,
+	F8: 119,
+	F9: 120,
+	F10: 121,
+	F11: 122,
+	F12: 123,
+	Unknown: 135,
+	NumLock: 144,
+	ScrollLock: 145,
+	MozMinus: 173,
+	Semicolon: 186,
+	Equal: 187,
+	Comma: 188,
+	Minus: 189,
+	Period: 190,
+	Slash: 191,
+	Backquote: 191,
+	LeftBracket: 219,
+	Backslash: 220,
+	RightBracket: 221,
+	Quote: 222
+};
 
+Branth.MouseButton = {
+	Left: 0,
+	Middle: 1,
+	Right: 2
+};
+
+Branth.InputKey = function(keyCode) {
+	this.keyCode = keyCode;
+	this.hold = false;
+	this.pressed = false;
+	this.released = false;
+};
+
+Branth.InputKey.prototype.up = function() {
+	this.hold = false;
+	this.released = true;
+};
+
+Branth.InputKey.prototype.down = function() {
+	this.hold = true;
+	this.pressed = true;
+};
+
+Branth.InputKey.prototype.reset = function() {
+	this.pressed = false;
+	this.released = false;
+};
+
+Branth.Input = {
+	Key: {},
+	Mouse: [],
+	Touch: [],
+	preventedKeys: [
+		Branth.KeyCode.Up,
+		Branth.KeyCode.Left,
+		Branth.KeyCode.Down,
+		Branth.KeyCode.Right,
+		Branth.KeyCode.Space
+	],
+	doubleInterval: 12,
+	mousePosition: new Vector2(0, 0),
+	touches: [],
+	setup() {
+		for (const i of Object.values(Branth.KeyCode)) {
+			this.Key[i] = new Branth.InputKey(i);
+		}
+		for (const i of Object.values(Branth.MouseButton)) {
+			this.Mouse[i] = new Branth.InputKey(i);
+			this.Mouse[i].doubleStep = 0;
+			this.Mouse[i].doublePressed = false;
+		}
+		for (let i = 0; i < 10; i++) {
+			this.Touch[i] = new Branth.InputKey(i);
+			this.Touch[i].position = new Vector2(0, 0);
+			this.Touch[i].setPosition = function(x, y) {
+				this.position.x = x;
+				this.position.y = y;
+			}
+		}
+	},
+	update() {
+		for (const i of Object.keys(this.Mouse)) {
+			const j = this.Mouse[i];
+			j.doublePressed = false;
+			if (j.doubleStep > 0) {
+				if (j.pressed) {
+					j.doublePressed = true;
+					j.doubleStep = 0;
+				}
+				else j.doubleStep--;
+			}
+			else if (j.pressed) j.doubleStep = this.doubleInterval;
+		}
+	},
+	reset() {
+		for (const i of Object.keys(this.Key)) {
+			this.Key[i].reset();
+		}
+		for (let i = this.Mouse.length - 1; i >= 0; i--) {
+			this.Mouse[i].reset();
+		}
+		for (let i = this.Touch.length - 1; i >= 0; i--) {
+			this.Touch[i].reset();
+		}
+	},
+	keyUp(keyCode) {
+		return this.Key[keyCode].released;
+	},
+	keyDown(keyCode) {
+		return this.Key[keyCode].pressed;
+	},
+	keyHold(keyCode) {
+		return this.Key[keyCode].hold;
+	},
+	mouseUp(button) {
+		return this.Mouse[button].released;
+	},
+	mouseDown(button) {
+		return this.Mouse[button].pressed;
+	},
+	mouseHold(button) {
+		return this.Mouse[button].hold;
+	},
+	mouseDouble(button) {
+		return this.Mouse[button].doublePressed;
+	},
+	touchUp(id) {
+		return this.Touch[id].released;
+	},
+	touchDown(id) {
+		return this.Touch[id].pressed;
+	},
+	touchHold(id) {
+		return this.Touch[id].hold;
+	},
+	eventKeyUp(e) {
+		this.Key[e.keyCode].up();
+	},
+	eventKeyDown(e) {
+		if (this.preventedKeys.includes(e.keyCode)) e.preventDefault();
+		const i = this.Key[e.keyCode];
+		if (!i.hold) i.down();
+	},
+	updateMousePosition(e) {
+		const b = Branth.Canvas.getBoundingClientRect();
+		this.mousePosition.x = e.clientX - b.x;
+		this.mousePosition.y = e.clientY - b.y;
+	},
+	eventMouseUp(e) {
+		this.Mouse[e.button].up();
+		this.updateMousePosition(e);
+	},
+	eventMouseDown(e) {
+		const i = this.Mouse[e.button];
+		if (!i.hold) {
+			i.down();
+			this.updateMousePosition(e);
+		}
+	},
+	eventMouseMove(e) {
+		this.updateMousePosition(e);
+	},
+	convertTouch(e) {
+		const b = Branth.Canvas.getBoundingClientRect();
+		return {
+			id: e.identifier,
+			x: e.clientX - b.x,
+			y: e.clientY - b.y
+		};
+	},
+	updateTouches(e) {
+		this.touches.length = 0;
+		for (const i of e.changedTouches) {
+			this.touches.push(this.convertTouch(i));
+		}
+	},
+	eventTouchEnd(e) {
+		for (const i of e.changedTouches) {
+			const j = this.convertTouch(i);
+			this.Touch[j.id].up();
+			this.Touch[j.id].setPosition(j.x, j.y);
+		}
+		this.updateTouches(e);
+	},
+	eventTouchMove(e) {
+		for (const i of e.changedTouches) {
+			const j = this.convertTouch(i);
+			this.Touch[j.id].setPosition(j.x, j.y);
+		}
+		this.updateTouches(e);
+	},
+	eventTouchStart(e) {
+		for (const i of e.changedTouches) {
+			const j = this.convertTouch(i);
+			if (!this.Touch[j.id].hold) {
+				this.Touch[j.id].down();
+				this.Touch[j.id].setPosition(j.x, j.y);
+			}
+		}
+		this.updateTouches(e);
+	}
+};
 
 Branth.Sound = {
 	update() {}
@@ -412,6 +701,18 @@ Branth.Draw = {
 Branth.Emitter = {};
 
 Branth.start = (options={}) => {
+	Branth.Input.setup();
+	window.onkeyup = (e) => Branth.Input.eventKeyUp(e);
+	window.onkeydown = (e) => Branth.Input.eventKeyDown(e);
+	window.onmouseup = (e) => Branth.Input.eventMouseUp(e);
+	window.onmousedown = (e) => Branth.Input.eventMouseDown(e);
+	window.onmousemove = (e) => Branth.Input.eventMouseMove(e);
+	window.ontouchend = (e) => Branth.Input.eventTouchEnd(e);
+	window.ontouchmove = (e) => Branth.Input.eventTouchMove(e);
+	window.ontouchstart = (e) => Branth.Input.eventTouchStart(e);
+	window.oncontextmenu = (e) => e.preventDefault();
+	Branth.Canvas.oncontextmenu = (e) => e.preventDefault();
+	if (options.autoResize) window.onresize = () => Branth.Room.resize();
 	const canvasID = options.canvasID? options.canvasID : "branthMainCanvas";
 	const style = document.createElement("style");
 	style.innerHTML = `
@@ -419,7 +720,7 @@ Branth.start = (options={}) => {
 			margin: 0;
 			padding: 0;
 		}` : ""}
-		${options.parentID? `#${options.parentID}` : "body"} {
+		${options.styleParent? `${options.parentID? `#${options.parentID}` : "body"} {
 			width: ${options.w? `${options.w}px` : "100vw"};
 			height: ${options.h? `${options.h}px` : "100vh"};
 			overflow: hidden;
@@ -428,7 +729,7 @@ Branth.start = (options={}) => {
 			left: ${options.align * 100}%;
 			transform: translate(-${options.align * 100}%, -${options.align * 100}%);` : ""}
 			${options.borderRadius? `border-radius: ${options.borderRadius}px;` : ""}
-		}
+		}` : ""}
 		#${canvasID} {
 			width: 100%;
 			height: 100%;
@@ -440,28 +741,21 @@ Branth.start = (options={}) => {
 	else Branth.Canvas.style.backgroundImage = "radial-gradient(darkorchid 33%, darkslateblue)";
 	if (options.parentID) document.querySelector(`#${options.parentID}`).appendChild(Branth.Canvas);
 	else document.body.appendChild(Branth.Canvas);
-	if (options.noStyle) {
+	document.head.appendChild(style);
+	style.onload = () => {
 		Branth.Room.resize();
 		Branth.Room.start("Load");
 		Branth.render(0);
-	}
-	else {
-		document.head.appendChild(style);
-		style.onload = () => {
-			Branth.Room.resize();
-			Branth.Room.start("Load");
-			Branth.render(0);
-		};
-	}
+	};
 };
 
 Branth.render = (t) => {
 	Branth.Time.update(t);
-	// Branth.Input.update();
+	Branth.Input.update();
 	Branth.Sound.update();
 	Branth.Room.clear();
 	Branth.Room.current.render();
-	// Branth.Input.reset();
+	Branth.Input.reset();
 	window.requestAnimationFrame(Branth.render);
 };
 

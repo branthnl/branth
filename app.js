@@ -9,6 +9,7 @@ const C = Branth.C,
 	Sound = Branth.Sound,
 	Loader = Branth.Loader,
 	Emitter = Branth.Emitter,
+	KeyCode = Branth.KeyCode,
 	Primitive = Branth.Primitive,
 	Menu = Branth.Room.add("Menu"),
 	Tuts = Branth.Room.add("Tuts"),
@@ -55,16 +56,19 @@ Branth.onLoadFinish = () => {
 	Room.start("Menu");
 };
 
+let bear = new Vector2(0, 0);
+
 Menu.render = () => {
-	Draw.image("Bear", 0, 0);
+	Draw.image("Bear", bear.x, bear.y);
+	if (Input.mouseDown(0)) {
+		bear.x = Input.mousePosition.x;
+		bear.y = Input.mousePosition.y;
+	}
+	bear.x += (1 + 4 * Input.keyHold(KeyCode.Shift)) * (Input.keyHold(KeyCode.Right) - Input.keyHold(KeyCode.Left));
+	bear.y += (1 + 4 * Input.keyHold(KeyCode.Shift)) * (Input.keyHold(KeyCode.Down) - Input.keyHold(KeyCode.Up));
 };
 
 const options = {
-	w: 360,
-	h: 540,
-	align: 0.5,
-	noStyle: true,
-	borderRadius: 20,
 	parentID: "gameContainer"
 };
 

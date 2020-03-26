@@ -7,28 +7,20 @@ class Vector2 {
 
 class BranthBehaviour {
 	start() {}
+	update() {}
 	render() {}
 }
 
 class BranthObject extends BranthBehaviour {
 	constructor(x, y) {
+		super();
 		this.id = Branth.OBJ.ID++;
 		this.depth = 0;
-		this._active = true;
 		this.visible = true;
 		this.xstart = x;
 		this.ystart = y;
 		this.x = x;
 		this.y = y;
-	}
-	get active() {
-		return this._active;
-	}
-	set active(val) {
-		if (!this._active && val) {
-			this.start();
-		}
-		this._active = val;
 	}
 }
 
@@ -40,9 +32,14 @@ Branth.OBJ = {
 	add(name) {
 		this.list[name] = [];
 	},
-	create(name, i) {
-		i.start();
-		this.list[name].push(i);
+	push(name, i, doStart=true) {
+		if (doStart) i.start();
+		try {
+			this.list[name].push(i);
+		}
+		catch {
+			console.error(`Code: 1\nError: Failed to push an object\nCause: Name/key not found: ${name}\nSolution: Try add \`Branth.OBJ.add("${name}");\` in your code`);
+		}
 		return i;
 	},
 	destroy(name, id) {
@@ -52,7 +49,33 @@ Branth.OBJ = {
 			}
 		}
 	},
+	updateAll() {
+		for (const i of Object.keys(this.list)) {
+			for (let j = this.list[i].length - 1; j >= 0; j--) {
+				const instance = this.list[i][j];
+				if (instance instanceof BranthObject) {
+					instance.update();
+				}
+			}
+		}
+	},
 	renderAll() {
+		const h = [];
+		const k = Object.keys(this.list);
+		for (let i = k.length - 1; i >= 0; i--) {
+			for (let j = this.list[k[i]].length - 1; j >= 0; j--) {
+				const instance = this.list[k[i]][j];
+				if (instance instanceof BranthObject) {
+					if (instance.visible) {
+						h.push(instance);
+					}
+				}
+			}
+		}
+		h.sort((a, b) => a.depth < b.depth? -1 : 1);
+		for (let i = h.length - 1; i >= 0; i--) {
+			h[i].render();
+		}
 	}
 };
 
@@ -685,22 +708,25 @@ Branth.Draw = {
 		let baseline = 0;
 		const t = this.splitText(text);
 		switch (this.ctx.textBaseline) {
-			case Branth.Align.m: baseline = -this.textHeight * (t.length - 1) * 0.5; break;
 			case Branth.Align.b: baseline = -this.textHeight * (t.length - 1); break;
+			case Branth.Align.m: baseline = -this.textHeight * (t.length - 1) * 0.5; break;
 		}
 		for (let i = t.length - 1; i >= 0; i--) {
 			this.ctx.fillText(t[i], x, y + baseline + this.textHeight * i);
 		}
-	},
-	textRegular(x, y, text, outline=false) {
-		if (outline) this.ctx.strokeText(text, x, y);
-		else this.ctx.fillText(text, x, y);
 	},
 	getTextWidth(text) {
 		return Math.max(...this.splitText(text).map(x => this.ctx.measureText(x).width));
 	},
 	getTextHeight(text) {
 		return this.textHeight * this.splitText(text).length;
+	},
+	textRegular(x, y, text, outline=false) {
+		if (outline) this.ctx.strokeText(text, x, y);
+		else this.ctx.fillText(text, x, y);
+	},
+	getTextWidthRegular(text) {
+		return this.ctx.measureText(text).width;
 	},
 	addImage(origin, name, img) {
 		img.origin = origin;

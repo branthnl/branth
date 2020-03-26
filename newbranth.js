@@ -53,6 +53,9 @@ Branth.OBJ = {
 		}
 		return i;
 	},
+	clear(name) {
+		this.list[name].length = 0;
+	},
 	destroy(name, id) {
 		for (let i = this.list[name].length - 1; i >= 0; i--) {
 			if (this.list[name][i].id === id) {
@@ -60,6 +63,12 @@ Branth.OBJ = {
 			}
 		}
 		return null;
+	},
+	clearAll() {
+		const k = Object.keys(this.list);
+		for (let i = k.length - 1; i >= 0; i--) {
+			this.list[k[i]].length = 0;
+		}
 	},
 	updateAll() {
 		const k = Object.keys(this.list);

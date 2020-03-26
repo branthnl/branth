@@ -406,12 +406,18 @@ Branth.Input = {
 		return this.Touch[id].hold;
 	},
 	eventKeyUp(e) {
-		this.Key[e.keyCode].up();
+		try {
+			this.Key[e.keyCode].up();
+		}
+		catch {}
 	},
 	eventKeyDown(e) {
 		if (this.preventedKeys.includes(e.keyCode)) e.preventDefault();
-		const i = this.Key[e.keyCode];
-		if (!i.hold) i.down();
+		try {
+			const i = this.Key[e.keyCode];
+			if (!i.hold) i.down();
+		}
+		catch {}
 	},
 	updateMousePosition(e) {
 		const b = Branth.Canvas.getBoundingClientRect();

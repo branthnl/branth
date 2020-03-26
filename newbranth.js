@@ -32,6 +32,17 @@ Branth.OBJ = {
 	add(name) {
 		this.list[name] = [];
 	},
+	get(name, id) {
+		for (let i = this.list[name].length - 1; i >= 0; i--) {
+			if (this.list[name][i].id === id) {
+				return this.list[name][i];
+			}
+		}
+		return null;
+	},
+	take(name) {
+		return this.list[name];
+	},
 	push(name, i, doStart=true) {
 		if (doStart) i.start();
 		try {
@@ -44,15 +55,17 @@ Branth.OBJ = {
 	},
 	destroy(name, id) {
 		for (let i = this.list[name].length - 1; i >= 0; i--) {
-			if (this.list[name].id === id) {
+			if (this.list[name][i].id === id) {
 				return this.list[name].splice(i, 1)[0];
 			}
 		}
+		return null;
 	},
 	updateAll() {
-		for (const i of Object.keys(this.list)) {
-			for (let j = this.list[i].length - 1; j >= 0; j--) {
-				const instance = this.list[i][j];
+		const k = Object.keys(this.list);
+		for (let i = k.length - 1; i >= 0; i--) {
+			for (let j = this.list[k[i]].length - 1; j >= 0; j--) {
+				const instance = this.list[k[i]][j];
 				if (instance instanceof BranthObject) {
 					instance.update();
 				}

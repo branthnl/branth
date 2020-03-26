@@ -21,7 +21,6 @@ class Chick extends Char {
 }
 
 Branth.OBJ.add("Char");
-Branth.OBJ.add("Chick");
 const Game = Branth.Room.add("Game");
 
 Branth.onLoadStart = () => {
@@ -38,14 +37,18 @@ Game.start = () => {
 		Branth.OBJ.push("Char", new Char("Bear", 78 + 8 * i, 32 + 32 * i));
 	}
 	for (let i = 10; i >= 0; i--) {
-		Branth.OBJ.push("Chick", new Chick(250 - 8 * i, 64 + 32 * (10 - i)));
+		Branth.OBJ.push("Char", new Chick(250 - 8 * i, 64 + 32 * (10 - i)));
 	}
 };
 
 Game.render = () => {
 	Branth.OBJ.updateAll();
 	Branth.OBJ.renderAll();
-	Branth.Draw.text(Branth.Room.mid.w, Branth.Room.mid.h, Branth.Input.keyHold(Branth.KeyCode.Space)? "Release space to render with same depth" : "Hold space to render with -y as depth");
+	// Destroy an object best after all objects are done with logic and render so it won't affect the array
+	if (Branth.Input.keyDown(Branth.KeyCode.Enter)) {
+		Branth.OBJ.destroy("Char", Math.pick(Branth.OBJ.take("Char").map(x => x.id)));
+	}
+	Branth.Draw.text(Branth.Room.mid.w, Branth.Room.mid.h, Branth.Input.keyHold(Branth.KeyCode.Space)? "Release space to render with same depth" : "Hold space to render with -y as depth" + " | Press enter to randomly destroy char");
 };
 
 let options = {

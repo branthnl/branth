@@ -601,7 +601,7 @@ Branth.Font = {
 	BoldItalic: "bold italic ",
 	FamilyDefault: "Maven Pro, sans-serif",
 	generate(size, style=Branth.Font.Regular, family=Branth.Font.FamilyDefault) {
-		return `${style}${size}px ${family}, serif`;
+		return { size, style, family };
 	}
 };
 
@@ -644,6 +644,7 @@ Branth.Primitive = {
 
 Branth.Draw = {
 	ctx: Branth.Ctx,
+	textHeight: 10,
 	images: {},
 	sprites: {},
 	strips: {},
@@ -653,8 +654,19 @@ Branth.Draw = {
 	resetCtx() {
 		this.ctx = Branth.Ctx;
 	},
+	setFill(c) {
+		this.ctx.fillStyle = c;
+	},
+	setColor(c) {
+		this.ctx.fillStyle = c;
+		this.ctx.strokeStyle = c;
+	},
+	setStroke(c) {
+		this.ctx.strokeStyle = c;
+	},
 	setFont(font) {
-		this.ctx.font = font;
+		this.ctx.font = `${font.style}${font.size}px ${font.family}, serif`;
+		this.textHeight = font.size;
 	},
 	setHAlign(align) {
 		this.ctx.textAlign = align;
@@ -665,6 +677,30 @@ Branth.Draw = {
 	setHVAlign(halign, valign) {
 		this.ctx.textAlign = halign;
 		this.ctx.textBaseline = valign;
+	},
+	splitText(text) {
+		return ("" + text).split("\n");
+	},
+	text(x, y, text) {
+		let baseline = 0;
+		const t = this.splitText(text);
+		switch (this.ctx.textBaseline) {
+			case Branth.Align.m: baseline = -this.textHeight * (t.length - 1) * 0.5; break;
+			case Branth.Align.b: baseline = -this.textHeight * (t.length - 1); break;
+		}
+		for (let i = t.length - 1; i >= 0; i--) {
+			this.ctx.fillText(t[i], x, y + baseline + this.textHeight * i);
+		}
+	},
+	textRegular(x, y, text, outline=false) {
+		if (outline) this.ctx.strokeText(text, x, y);
+		else this.ctx.fillText(text, x, y);
+	},
+	getTextWidth(text) {
+		return Math.max(...this.splitText(text).map(x => this.ctx.measureText(x).width));
+	},
+	getTextHeight(text) {
+		return this.textHeight * this.splitText(text).length;
 	},
 	addImage(origin, name, img) {
 		img.origin = origin;
@@ -695,6 +731,15 @@ Branth.Draw = {
 			h: img.height
 		};
 		this.ctx.drawImage(img, (index % img.strip) * s.w, 0, s.w, s.h, x, y, s.w, s.h);
+	},
+	draw(outline=false) {
+		if (outline) this.ctx.stroke();
+		else this.ctx.fill();
+	},
+	rect(x, y, w, h, outline=false) {
+		this.ctx.beginPath();
+		this.ctx.rect(x, y, w, h);
+		this.draw(outline);
 	}
 };
 

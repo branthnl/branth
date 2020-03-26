@@ -60,12 +60,12 @@ Menu.render = () => {
 };
 
 const options = {
-	w: 960,
+	w: 360,
 	h: 540,
 	align: 0.5,
-	color: C.blue,
+	noStyle: true,
 	borderRadius: 20,
-	removeAllGap: true
+	parentID: "gameContainer"
 };
 
 Branth.start(options);

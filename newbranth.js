@@ -27,7 +27,6 @@ class BranthObject extends BranthBehaviour {
 	set active(val) {
 		if (!this._active && val) {
 			this.start();
-			this.afterStart();
 		}
 		this._active = val;
 	}
@@ -36,6 +35,7 @@ class BranthObject extends BranthBehaviour {
 const Branth = {};
 
 Branth.OBJ = {
+	ID: 0,
 	list: {},
 	add(name) {
 		this.list[name] = [];
@@ -137,14 +137,7 @@ Branth.Room = {
 	}
 };
 
-Branth.KeyCode = {};
 
-Branth.Mouse = {};
-
-Branth.Input = {
-	update() {},
-	reset() {}
-};
 
 Branth.Sound = {
 	update() {}
@@ -422,48 +415,53 @@ Branth.start = (options={}) => {
 	const canvasID = options.canvasID? options.canvasID : "branthMainCanvas";
 	const style = document.createElement("style");
 	style.innerHTML = `
-		${options.removeAllGap?
-		`* {
+		${options.removeAllGap? `* {
 			margin: 0;
 			padding: 0;
-		}`
-		: ""}
-		${options.parent? options.parent : "body"} {
+		}` : ""}
+		${options.parentID? `#${options.parentID}` : "body"} {
 			width: ${options.w? `${options.w}px` : "100vw"};
 			height: ${options.h? `${options.h}px` : "100vh"};
 			overflow: hidden;
-			position: absolute;
+			${options.align !== undefined? `position: absolute;
 			top: ${options.align * 100}%;
 			left: ${options.align * 100}%;
-			transform: translate(-${options.align * 100}%, -${options.align * 100}%);
+			transform: translate(-${options.align * 100}%, -${options.align * 100}%);` : ""}
+			${options.borderRadius? `border-radius: ${options.borderRadius}px;` : ""}
 		}
 		#${canvasID} {
 			width: 100%;
 			height: 100%;
-			border-radius: ${options.borderRadius}px;
 		}
 	`;
-	if (options.color) Branth.Canvas.style.backgroundColor = options.color;
-	else Branth.Canvas.style.backgroundImage = "radial-gradient(darkorchid 33%, darkslateblue)";
 	Branth.Canvas.id = canvasID;
 	Branth.Draw.setHVAlign(Branth.Align.l, Branth.Align.t);
-	document.head.appendChild(style);
-	document.body.appendChild(Branth.Canvas);
-	// TODO ^ Append child on parent
-	style.onload = () => {
+	if (options.color) Branth.Canvas.style.backgroundColor = options.color;
+	else Branth.Canvas.style.backgroundImage = "radial-gradient(darkorchid 33%, darkslateblue)";
+	if (options.parentID) document.querySelector(`#${options.parentID}`).appendChild(Branth.Canvas);
+	else document.body.appendChild(Branth.Canvas);
+	if (options.noStyle) {
 		Branth.Room.resize();
 		Branth.Room.start("Load");
 		Branth.render(0);
-	};
+	}
+	else {
+		document.head.appendChild(style);
+		style.onload = () => {
+			Branth.Room.resize();
+			Branth.Room.start("Load");
+			Branth.render(0);
+		};
+	}
 };
 
 Branth.render = (t) => {
 	Branth.Time.update(t);
-	Branth.Input.update();
+	// Branth.Input.update();
 	Branth.Sound.update();
 	Branth.Room.clear();
 	Branth.Room.current.render();
-	Branth.Input.reset();
+	// Branth.Input.reset();
 	window.requestAnimationFrame(Branth.render);
 };
 

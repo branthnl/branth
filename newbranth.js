@@ -319,9 +319,10 @@ Branth.InputKey.prototype.reset = function() {
 };
 
 Branth.Input = {
-	Key: {},
+	Key: [],
 	Mouse: [],
 	Touch: [],
+	Gamepad: {},
 	preventedKeys: [
 		Branth.KeyCode.Up,
 		Branth.KeyCode.Left,
@@ -470,6 +471,15 @@ Branth.Input = {
 			}
 		}
 		this.updateTouches(e);
+	},
+	eventGamepad(e, connecting) {
+		const g = e.gamepad;
+		if (connecting) {
+			this.Gamepad[g.index] = e.gamepad;
+		}
+		else {
+			delete this.Gamepad[g.index];
+		}
 	}
 };
 
@@ -803,6 +813,8 @@ Branth.start = (options={}) => {
 	window.ontouchend = (e) => Branth.Input.eventTouchEnd(e);
 	window.ontouchmove = (e) => Branth.Input.eventTouchMove(e);
 	window.ontouchstart = (e) => Branth.Input.eventTouchStart(e);
+	window.addEventListener("gamepadconnected", (e) => Branth.Input.eventGamepad(e, true));
+	window.addEventListener("gamepaddisconnected", (e) => Branth.Input.eventGamepad(e, false));
 	window.oncontextmenu = (e) => e.preventDefault();
 	Branth.Canvas.oncontextmenu = (e) => e.preventDefault();
 	if (options.autoResize) window.onresize = () => Branth.Room.resize();
